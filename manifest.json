@@ -1,7 +1,7 @@
 {
-  "name": "Saiyan Steps",
-  "short_name": "SaiyanSteps",
-  "description": "Compteur de pas DBZ — Propulsé par Katrava",
+  "name": "Saiyan Tracker",
+  "short_name": "SaiyanTracker",
+  "description": "Suivi pas, sommeil et hydratation pour Saiyan Fitness",
   "start_url": "/saiyan-steps/",
   "display": "standalone",
   "orientation": "portrait",
