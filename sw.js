@@ -1,25 +1,79 @@
-const CACHE_NAME = 'saiyan-steps-v2';
-const ASSETS = ['/saiyan-steps/', '/saiyan-steps/index.html', '/saiyan-steps/manifest.json'];
-const FONT_CACHE = 'saiyan-fonts-v1';
+/* ═══════════════════════════════════════════════════════════════════════════
+   Saiyan Tracker — Service Worker v3
+   Stale-while-revalidate strategy + font caching + old cache cleanup
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+var CACHE_NAME = 'saiyan-steps-v3';
+var FONT_CACHE = 'saiyan-fonts-v1';
+
+var ASSETS = [
+  '/saiyan-steps/',
+  '/saiyan-steps/index.html',
+  '/saiyan-steps/css/style.css',
+  '/saiyan-steps/js/app.js',
+  '/saiyan-steps/manifest.json'
+];
+
+// ── Install: precache core assets ──
+self.addEventListener('install', function(e) {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(ASSETS);
+    })
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(names => Promise.all(names.filter(n => n !== CACHE_NAME && n !== FONT_CACHE).map(n => caches.delete(n)))));
+// ── Activate: clean old caches ──
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
+    caches.keys().then(function(names) {
+      return Promise.all(
+        names
+          .filter(function(n) { return n !== CACHE_NAME && n !== FONT_CACHE; })
+          .map(function(n) { return caches.delete(n); })
+      );
+    })
+  );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
+// ── Fetch: stale-while-revalidate for app, cache-first for fonts ──
+self.addEventListener('fetch', function(e) {
+  var url = new URL(e.request.url);
+
+  // Font requests: cache-first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(caches.open(FONT_CACHE).then(cache => cache.match(e.request).then(cached => cached || fetch(e.request).then(resp => { cache.put(e.request, resp.clone()); return resp; }))));
+    e.respondWith(
+      caches.open(FONT_CACHE).then(function(cache) {
+        return cache.match(e.request).then(function(cached) {
+          if (cached) return cached;
+          return fetch(e.request).then(function(resp) {
+            if (resp.ok) cache.put(e.request, resp.clone());
+            return resp;
+          });
+        });
+      })
+    );
     return;
   }
-  e.respondWith(caches.match(e.request).then(cached => {
-    const fetchPromise = fetch(e.request).then(resp => { if (resp.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, resp.clone())); return resp; }).catch(() => cached);
-    return cached || fetchPromise;
-  }));
+
+  // App requests: stale-while-revalidate
+  e.respondWith(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.match(e.request).then(function(cached) {
+        var fetchPromise = fetch(e.request).then(function(resp) {
+          if (resp.ok) {
+            cache.put(e.request, resp.clone());
+          }
+          return resp;
+        }).catch(function() {
+          return cached;
+        });
+
+        // Return cached immediately, update in background
+        return cached || fetchPromise;
+      });
+    })
+  );
 });
