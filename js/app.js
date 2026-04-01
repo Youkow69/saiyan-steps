@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Saiyan Tracker — app.js
    All JS extracted from index.html with Sprint 1 fixes + streaks + transformations
+   + Final round fixes (FIX 1-12)
    ═══════════════════════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -22,8 +23,10 @@ const STREAK_KEY       = 'st_streak';
 const TOTAL_STEPS_KEY  = 'st_total_steps';
 const LAST_DATE_KEY    = 'st_last_date';
 const SLEEP_SESSION_KEY = 'st_sleep_session';
+const ACTIVE_DATE_KEY  = 'st_active_date';
+const HISTORY_MODE_KEY = 'st_history_mode';
 
-// Named constants (fix #2) — no magic numbers
+// Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
 const STEP_TO_KCAL       = 0.04;
 const RING_CIRCUMFERENCE = 276.46;
@@ -61,9 +64,14 @@ const TRANSFORMATIONS = [
 // SECTION 2: Utility Functions
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Returns today's date as YYYY-MM-DD in LOCAL timezone (fix #1) */
+/** Returns today's date as YYYY-MM-DD in LOCAL timezone */
 function todayIso() {
-  var d = new Date();
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/** Convert a Date object to YYYY-MM-DD (FIX 7) */
+function dateToIso(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
@@ -72,28 +80,28 @@ function fmtNum(n) { return n.toLocaleString('fr-FR'); }
 
 /** Format milliseconds as HhMM */
 function formatHM(ms) {
-  var totalMin = Math.round(ms / 60000);
-  var h = Math.floor(totalMin / 60);
-  var m = totalMin % 60;
+  const totalMin = Math.round(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
   return h + 'h' + (m < 10 ? '0' : '') + m;
 }
 
 /** Format timestamp as HH:MM */
 function fmtTime(ts) {
   if (!ts) return '\u2014';
-  var d = new Date(ts);
+  const d = new Date(ts);
   return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
 }
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 3: Toast Notification (fix #3)
+// SECTION 3: Toast Notification
 // ═══════════════════════════════════════════════════════════════════════════
 
-var _toastTimer = null;
+let _toastTimer = null;
 function showToast(msg, durationMs) {
   if (durationMs === undefined) durationMs = 2500;
-  var el = document.getElementById('toast');
+  const el = document.getElementById('toast');
   if (!el) return;
   el.textContent = msg;
   el.classList.add('show');
@@ -103,12 +111,12 @@ function showToast(msg, durationMs) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 4: Safe localStorage Helpers (fix #5, #6)
+// SECTION 4: Safe localStorage Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
 function safeGet(key, fallback) {
   try {
-    var val = localStorage.getItem(key);
+    const val = localStorage.getItem(key);
     return val !== null ? val : (fallback !== undefined ? fallback : null);
   } catch (e) {
     showToast('Erreur lecture stockage');
@@ -137,63 +145,71 @@ function setHistory(key, obj) {
 function todayVal(key) { return getHistory(key)[todayIso()] || 0; }
 
 function saveTodayVal(key, val) {
-  var h = getHistory(key);
+  const h = getHistory(key);
   h[todayIso()] = val;
   setHistory(key, h);
 }
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 5: Application State
+// SECTION 5: Application State (FIX 9: var -> let)
 // ═══════════════════════════════════════════════════════════════════════════
 
-var stepCount      = 0;
-var dailyGoal      = 10000;
-var threshold      = 12;
-var isRunning      = false;
-var lastAccel      = 0;
-var lastStepTime   = 0;
-var activeStart    = null;
-var totalActiveMs  = 0;
-var motionGranted  = false;
+let stepCount      = 0;
+let dailyGoal      = 10000;
+let threshold      = 12;
+let isRunning      = false;
+let lastAccel      = 0;
+let lastStepTime   = 0;
+let activeStart    = null;
+let totalActiveMs  = 0;
+let motionGranted  = false;
 
-var sleepMode       = false;
-var sleepStart      = null;
-var sleepConfirmed  = false;
-var stillnessStart  = null;
-var lastSleepAccel  = Infinity;
-var sleepCheckInterval = null;
+let sleepMode       = false;
+let sleepStart      = null;
+let sleepConfirmed  = false;
+let stillnessStart  = null;
+let lastSleepAccel  = Infinity;
+let sleepCheckInterval = null;
 
-var waterGoal      = 8;
-var waterCount     = 0;
-var waterReminderInterval = null;
+let waterGoal      = 8;
+let waterCount     = 0;
+let waterReminderInterval = null;
+
+// FIX 4: Smart intervals
+let midnightInterval = null;
+let activeInterval = null;
+
+// FIX 10: History mode (7 or 30 days)
+let historyDays = parseInt(safeGet(HISTORY_MODE_KEY, '7'), 10);
+
+// FIX 12: Notification tracking
+let goalNotifSent = false;
+let lastTransformName = '';
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 6: Streak System (fix #16)
+// SECTION 6: Streak System
 // ═══════════════════════════════════════════════════════════════════════════
 
 function getStreak() {
   try {
-    var data = JSON.parse(safeGet(STREAK_KEY, '{"count":0,"lastDate":""}'));
+    const data = JSON.parse(safeGet(STREAK_KEY, '{"count":0,"lastDate":""}'));
     return data;
   } catch (e) { return { count: 0, lastDate: '' }; }
 }
 
 function updateStreak() {
-  var streak = getStreak();
-  var today = todayIso();
-  var stepsH = getHistory(STEPS_KEY);
-  var todaySteps = stepsH[today] || 0;
+  const streak = getStreak();
+  const today = todayIso();
+  const stepsH = getHistory(STEPS_KEY);
+  const todaySteps = stepsH[today] || 0;
 
   if (todaySteps >= dailyGoal) {
-    if (streak.lastDate === today) {
-      // Already counted today
-    } else {
-      // Check if yesterday was also a streak day
-      var yesterday = new Date();
+    if (streak.lastDate !== today) {
+      const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      var yIso = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
+      const yIso = dateToIso(yesterday);
       if (streak.lastDate === yIso) {
         streak.count++;
       } else {
@@ -205,7 +221,7 @@ function updateStreak() {
   }
 
   // Update badge UI
-  var badge = document.getElementById('streakBadge');
+  const badge = document.getElementById('streakBadge');
   if (badge) {
     if (streak.count > 0) {
       badge.textContent = '\uD83D\uDD25 ' + streak.count + ' jour' + (streak.count > 1 ? 's' : '');
@@ -218,23 +234,23 @@ function updateStreak() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 7: Transformation System (fix #17)
+// SECTION 7: Transformation System
 // ═══════════════════════════════════════════════════════════════════════════
 
 function getTotalAllTimeSteps() {
-  var total = parseInt(safeGet(TOTAL_STEPS_KEY, '0'), 10);
+  const total = parseInt(safeGet(TOTAL_STEPS_KEY, '0'), 10);
   return isNaN(total) ? 0 : total;
 }
 
 function addToTotalSteps(count) {
-  var total = getTotalAllTimeSteps() + count;
+  const total = getTotalAllTimeSteps() + count;
   safeSet(TOTAL_STEPS_KEY, total.toString());
   return total;
 }
 
 function getCurrentTransformation(totalSteps) {
-  var level = TRANSFORMATIONS[0];
-  for (var i = TRANSFORMATIONS.length - 1; i >= 0; i--) {
+  let level = TRANSFORMATIONS[0];
+  for (let i = TRANSFORMATIONS.length - 1; i >= 0; i--) {
     if (totalSteps >= TRANSFORMATIONS[i].minSteps) {
       level = TRANSFORMATIONS[i];
       break;
@@ -244,7 +260,7 @@ function getCurrentTransformation(totalSteps) {
 }
 
 function getNextTransformation(totalSteps) {
-  for (var i = 0; i < TRANSFORMATIONS.length; i++) {
+  for (let i = 0; i < TRANSFORMATIONS.length; i++) {
     if (totalSteps < TRANSFORMATIONS[i].minSteps) {
       return TRANSFORMATIONS[i];
     }
@@ -253,43 +269,55 @@ function getNextTransformation(totalSteps) {
 }
 
 function updateTransformationUI() {
-  var total = getTotalAllTimeSteps();
-  var current = getCurrentTransformation(total);
-  var next = getNextTransformation(total);
+  const total = getTotalAllTimeSteps();
+  const current = getCurrentTransformation(total);
+  const next = getNextTransformation(total);
 
-  var levelEl = document.getElementById('transformLevel');
-  var progressEl = document.getElementById('transformProgress');
+  const levelEl = document.getElementById('transformLevel');
+  const progressEl = document.getElementById('transformProgress');
 
   if (levelEl) {
     levelEl.textContent = current.emoji + ' ' + current.name;
   }
   if (progressEl) {
     if (next) {
-      var remaining = next.minSteps - total;
+      const remaining = next.minSteps - total;
       progressEl.textContent = fmtNum(remaining) + ' pas avant ' + next.name;
     } else {
       progressEl.textContent = 'Niveau maximum atteint !';
     }
   }
+
+  // FIX 12: Notify on new transformation
+  if (lastTransformName && lastTransformName !== current.name) {
+    sendNotif('Nouvelle transformation !', current.emoji + ' ' + current.name + ' atteint !');
+  }
+  lastTransformName = current.name;
 }
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 8: Sync Code & Cross-app Sync (fix #15)
+// SECTION 8: Sync Code & Cross-app Sync (FIX 8: real SHA-256)
 // ═══════════════════════════════════════════════════════════════════════════
 
-function generateSyncCode() {
-  var date = todayIso();
-  var sleepHistory = getHistory(SLEEP_KEY);
-  var sleepHours = sleepHistory[date] || 0;
-  var hash = btoa((stepCount + sleepHours + waterCount + date + 'saiyan').slice(0, 32)).slice(0, 12);
-  var data = { steps: stepCount, sleepHours: sleepHours, waterGlasses: waterCount, date: date, timestamp: Date.now(), hash: hash, app: 'saiyan-tracker' };
+/** Real SHA-256 hash using SubtleCrypto (FIX 8) */
+async function hashData(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+async function generateSyncCode() {
+  const date = todayIso();
+  const sleepHistory = getHistory(SLEEP_KEY);
+  const sleepHours = sleepHistory[date] || 0;
+  const hash = await hashData(stepCount + '' + sleepHours + '' + waterCount + date + 'saiyan');
+  const data = { steps: stepCount, sleepHours: sleepHours, waterGlasses: waterCount, date: date, timestamp: Date.now(), hash: hash, app: 'saiyan-tracker' };
   return btoa(JSON.stringify(data));
 }
 
 function syncToFitness() {
-  var sleepHistory = getHistory(SLEEP_KEY);
-  var sleepHours = sleepHistory[todayIso()] || 0;
+  const sleepHistory = getHistory(SLEEP_KEY);
+  const sleepHours = sleepHistory[todayIso()] || 0;
   safeSet('saiyan_tracker_sync', JSON.stringify({
     steps: stepCount,
     sleepHours: sleepHours,
@@ -301,24 +329,36 @@ function syncToFitness() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 9: UI Update — Steps
+// SECTION 9: UI Update — Steps (FIX 6: bump only on real steps)
 // ═══════════════════════════════════════════════════════════════════════════
 
-var _stepsRafId = null;
-function updateStepsUI() {
+let _stepsRafId = null;
+let _pendingIsNewStep = false;
+
+function updateStepsUI(isNewStep) {
+  if (isNewStep) _pendingIsNewStep = true;
   if (_stepsRafId) return;
-  _stepsRafId = requestAnimationFrame(function() { _stepsRafId = null; _updateStepsUIImmediate(); });
+  _stepsRafId = requestAnimationFrame(function() {
+    _stepsRafId = null;
+    const doNewStep = _pendingIsNewStep;
+    _pendingIsNewStep = false;
+    _updateStepsUIImmediate(doNewStep);
+  });
 }
 
-function _updateStepsUIImmediate() {
-  var pct = Math.min(1, stepCount / dailyGoal);
-  var pctInt = Math.round(pct * 100);
+function _updateStepsUIImmediate(isNewStep) {
+  const pct = Math.min(1, stepCount / dailyGoal);
+  const pctInt = Math.round(pct * 100);
 
-  var el = document.getElementById('stepDisplay');
+  const el = document.getElementById('stepDisplay');
   el.textContent = fmtNum(stepCount);
-  el.classList.remove('bump');
-  void el.offsetWidth;
-  el.classList.add('bump');
+
+  // FIX 6: Only bump on real new steps
+  if (isNewStep) {
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+  }
 
   document.getElementById('ringFill').style.strokeDashoffset = (RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
   document.getElementById('progressFill').style.width = pctInt + '%';
@@ -326,17 +366,20 @@ function _updateStepsUIImmediate() {
   document.getElementById('distDisp').textContent = (stepCount * STEP_TO_KM).toFixed(2);
   document.getElementById('calDisp').textContent = Math.round(stepCount * STEP_TO_KCAL);
 
-  var ams = totalActiveMs;
+  let ams = totalActiveMs;
   if (isRunning && activeStart) ams += Date.now() - activeStart;
   document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
 
   document.getElementById('goalValueDisp').textContent = fmtNum(dailyGoal);
   document.getElementById('goalDisplay').textContent = fmtNum(dailyGoal);
 
-  document.getElementById('syncCodeBox').textContent = generateSyncCode();
+  // Sync code is now async (FIX 8)
+  generateSyncCode().then(function(code) {
+    document.getElementById('syncCodeBox').textContent = code;
+  });
 
   // ARIA progressbar
-  var ringWrap = document.getElementById('ringWrap');
+  const ringWrap = document.getElementById('ringWrap');
   if (ringWrap) {
     ringWrap.setAttribute('aria-valuenow', stepCount);
     ringWrap.setAttribute('aria-valuemax', dailyGoal);
@@ -344,13 +387,21 @@ function _updateStepsUIImmediate() {
 
   updateTopBar();
   renderStepsHistory();
+  renderHourlyChart();
   updateStreak();
   updateTransformationUI();
   syncToFitness();
+
+  // FIX 12: Goal reached notification
+  if (stepCount >= dailyGoal && !goalNotifSent) {
+    goalNotifSent = true;
+    requestNotifPermission();
+    sendNotif('Objectif atteint !', fmtNum(stepCount) + ' pas ! Tu es un vrai Saiyan !');
+  }
 }
 
 function renderStepsHistory() {
-  var h = getHistory(STEPS_KEY);
+  const h = getHistory(STEPS_KEY);
   renderHistory('stepsHistory', h, dailyGoal, 'ki');
 }
 
@@ -360,16 +411,16 @@ function renderStepsHistory() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function updateSleepUI() {
-  var sleepHistory = getHistory(SLEEP_KEY);
-  var date = todayIso();
-  var todaySleep = sleepHistory[date] || 0;
+  const sleepHistory = getHistory(SLEEP_KEY);
+  const date = todayIso();
+  const todaySleep = sleepHistory[date] || 0;
 
-  var iconEl   = document.getElementById('sleepIcon');
-  var durEl    = document.getElementById('sleepDurationDisp');
-  var lblEl    = document.getElementById('sleepStatusLabel');
-  var detectEl = document.getElementById('sleepDetecting');
-  var btnSleep = document.getElementById('btnSleepMode');
-  var btnWake  = document.getElementById('btnWakeUp');
+  const iconEl   = document.getElementById('sleepIcon');
+  const durEl    = document.getElementById('sleepDurationDisp');
+  const lblEl    = document.getElementById('sleepStatusLabel');
+  const detectEl = document.getElementById('sleepDetecting');
+  const btnSleep = document.getElementById('btnSleepMode');
+  const btnWake  = document.getElementById('btnWakeUp');
 
   if (sleepMode) {
     iconEl.textContent = '\uD83D\uDE34';
@@ -379,7 +430,7 @@ function updateSleepUI() {
       lblEl.textContent = 'Mode sommeil actif depuis ' + fmtTime(sleepStart);
       detectEl.classList.remove('hidden');
     } else {
-      var elapsed = formatHM(Date.now() - sleepStart);
+      const elapsed = formatHM(Date.now() - sleepStart);
       durEl.textContent = elapsed;
       lblEl.textContent = '\uD83D\uDE34 Endormi depuis ' + fmtTime(sleepStart);
       detectEl.classList.add('hidden');
@@ -405,7 +456,7 @@ function updateSleepUI() {
 
   // Load last session times
   try {
-    var sd = JSON.parse(localStorage.getItem(SLEEP_SESSION_KEY) || 'null');
+    const sd = JSON.parse(localStorage.getItem(SLEEP_SESSION_KEY) || 'null');
     if (sd) {
       document.getElementById('sleepBedtime').textContent = fmtTime(sd.start) || '\u2014';
       document.getElementById('sleepWaketime').textContent = sd.end ? fmtTime(sd.end) : (sleepMode ? 'En cours' : '\u2014');
@@ -413,15 +464,15 @@ function updateSleepUI() {
   } catch (e) { /* ignore */ }
 
   // Stats
-  var nights = Object.keys(sleepHistory).length;
-  var vals = Object.values(sleepHistory);
+  const nights = Object.keys(sleepHistory).length;
+  const vals = Object.values(sleepHistory);
   document.getElementById('sleepNights').textContent = nights;
   if (todaySleep > 0) {
     document.getElementById('sleepTotal').textContent = todaySleep.toFixed(1) + 'h';
-    var score = Math.min(100, Math.round((todaySleep / SLEEP_PERFECT_H) * 100));
+    const score = Math.min(100, Math.round((todaySleep / SLEEP_PERFECT_H) * 100));
     document.getElementById('sleepScore').textContent = score + '%';
   } else {
-    var lastNight = vals.length > 0 ? vals[vals.length - 1] : 0;
+    const lastNight = vals.length > 0 ? vals[vals.length - 1] : 0;
     document.getElementById('sleepTotal').textContent = lastNight > 0 ? lastNight.toFixed(1) + 'h' : '\u2014';
     document.getElementById('sleepScore').textContent = lastNight > 0 ? Math.min(100, Math.round((lastNight / SLEEP_PERFECT_H) * 100)) + '%' : '\u2014';
   }
@@ -431,8 +482,8 @@ function updateSleepUI() {
 }
 
 function renderSleepHistory() {
-  var h = getHistory(SLEEP_KEY);
-  var normalized = {};
+  const h = getHistory(SLEEP_KEY);
+  const normalized = {};
   Object.entries(h).forEach(function(entry) { normalized[entry[0]] = Math.round(entry[1] * 1000 / 12); });
   renderHistory('sleepHistory', normalized, 1000, 'sleep');
 }
@@ -443,9 +494,9 @@ function renderSleepHistory() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function updateWaterUI() {
-  var pct = Math.min(1, waterCount / waterGoal);
-  var pctInt = Math.round(pct * 100);
-  var ml = waterCount * GLASS_ML;
+  const pct = Math.min(1, waterCount / waterGoal);
+  const pctInt = Math.round(pct * 100);
+  const ml = waterCount * GLASS_ML;
 
   document.getElementById('waterMlDisp').textContent = ml >= 1000
     ? (ml / 1000).toFixed(1) + ' L'
@@ -455,22 +506,20 @@ function updateWaterUI() {
   document.getElementById('waterPct').textContent = pctInt + '%';
   document.getElementById('waterGoalDisplay').textContent = waterGoal;
 
-  // Star-rating glass grid (fix #7)
-  var grid = document.getElementById('glassesGrid');
+  // Star-rating glass grid
+  const grid = document.getElementById('glassesGrid');
   grid.innerHTML = '';
-  var total = Math.max(waterGoal, waterCount);
-  for (var i = 0; i < total; i++) {
-    var btn = document.createElement('button');
+  const total = Math.max(waterGoal, waterCount);
+  for (let i = 0; i < total; i++) {
+    const btn = document.createElement('button');
     btn.className = 'glass-btn' + (i < waterCount ? ' filled' : '');
     btn.textContent = i < waterCount ? '\uD83E\uDD64' : '\uD83E\uDD5B';
     btn.setAttribute('aria-label', 'Verre ' + (i + 1));
     (function(idx, btnRef) {
       btnRef.addEventListener('click', function() {
         if (idx < waterCount) {
-          // Click filled = unfill from there
           waterCount = idx;
         } else {
-          // Click empty = fill up to there
           waterCount = Math.min(idx + 1, MAX_WATER);
         }
         saveTodayVal(WATER_KEY, waterCount);
@@ -489,7 +538,7 @@ function updateWaterUI() {
 }
 
 function renderWaterHistory() {
-  var h = getHistory(WATER_KEY);
+  const h = getHistory(WATER_KEY);
   renderHistory('waterHistory', h, waterGoal, 'water');
 }
 
@@ -513,50 +562,80 @@ function removeGlass() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 12: Generic History Renderer
+// SECTION 12: Generic History Renderer (FIX 10: 30-day toggle + color coding)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderHistory(containerId, history, goal, type) {
-  var container = document.getElementById(containerId);
+  const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = '';
 
-  var today = todayIso();
-  var days = [];
-  for (var i = 6; i >= 0; i--) {
-    var d = new Date();
+  const today = todayIso();
+  const numDays = historyDays;
+  const days = [];
+  for (let i = numDays - 1; i >= 0; i--) {
+    const d = new Date();
     d.setDate(d.getDate() - i);
     days.push(d.toISOString().slice(0, 10));
   }
 
-  var maxVal = Math.max(goal, 1);
+  // Update grid columns based on mode
+  container.style.gridTemplateColumns = 'repeat(' + numDays + ', 1fr)';
+
+  let maxVal = Math.max(goal, 1);
   days.forEach(function(day) {
-    var v = history[day] || 0;
+    const v = history[day] || 0;
     if (v > maxVal) maxVal = v;
   });
 
-  var dayLabels = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+  const dayLabels = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
 
   days.forEach(function(day) {
-    var val = history[day] || 0;
-    var h = Math.max(3, Math.round((val / maxVal) * 62));
-    var isToday = day === today;
-    var dow = new Date(day + 'T12:00:00').getDay();
+    const val = history[day] || 0;
+    const h = Math.max(3, Math.round((val / maxVal) * 62));
+    const isToday = day === today;
+    const dow = new Date(day + 'T12:00:00').getDay();
 
-    var col = document.createElement('div');
+    const col = document.createElement('div');
     col.className = 'hbar-col';
 
-    var bar = document.createElement('div');
-    bar.className = 'hbar ' + (isToday ? 'today-' + type : 'past');
+    const bar = document.createElement('div');
+    bar.className = 'hbar';
+
+    // FIX 10: Color coding based on goal progress
+    if (isToday) {
+      bar.classList.add('today-' + type);
+    } else if (type === 'ki') {
+      const ratio = val / goal;
+      if (ratio >= 1) {
+        bar.style.background = 'var(--green)';
+      } else if (ratio >= 0.5) {
+        bar.style.background = 'var(--orange)';
+      } else if (val > 0) {
+        bar.style.background = 'var(--red)';
+      } else {
+        bar.classList.add('past');
+      }
+    } else {
+      bar.classList.add(isToday ? 'today-' + type : 'past');
+    }
+
     bar.style.height = h + 'px';
 
-    var dl = document.createElement('span');
+    const dl = document.createElement('span');
     dl.className = 'hday';
-    dl.textContent = isToday ? 'Auj' : dayLabels[dow];
+    if (numDays <= 7) {
+      dl.textContent = isToday ? 'Auj' : dayLabels[dow];
+    } else {
+      // For 30 days, show date number
+      dl.textContent = isToday ? 'Auj' : new Date(day + 'T12:00:00').getDate().toString();
+    }
 
-    var vl = document.createElement('span');
+    const vl = document.createElement('span');
     vl.className = 'hval';
-    if (type === 'sleep') {
+    if (numDays > 7) {
+      vl.textContent = ''; // Hide values in 30-day mode for space
+    } else if (type === 'sleep') {
       vl.textContent = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '\u2014';
     } else if (type === 'water') {
       vl.textContent = val > 0 ? val + '\uD83E\uDD64' : '\u2014';
@@ -573,33 +652,80 @@ function renderHistory(containerId, history, goal, type) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 12b: Hourly Chart (FIX 11)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderHourlyChart() {
+  const container = document.getElementById('hourlyChart');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const hourlyKey = 'st_hourly_' + todayIso();
+  const hourly = JSON.parse(safeGet(hourlyKey, '{}'));
+
+  let maxH = 1;
+  for (let i = 0; i < 24; i++) {
+    const v = hourly[i] || 0;
+    if (v > maxH) maxH = v;
+  }
+
+  for (let i = 0; i < 24; i++) {
+    const val = hourly[i] || 0;
+    const pct = Math.round((val / maxH) * 100);
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.7rem';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'min-width:28px;text-align:right;color:var(--muted);font-size:0.65rem';
+    label.textContent = i.toString().padStart(2, '0') + 'h';
+
+    const barWrap = document.createElement('div');
+    barWrap.style.cssText = 'flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden';
+
+    const barFill = document.createElement('div');
+    barFill.style.cssText = 'height:100%;border-radius:4px;background:var(--gradient-ki);transition:width 0.3s ease;width:' + (val > 0 ? Math.max(2, pct) : 0) + '%';
+
+    const valLabel = document.createElement('span');
+    valLabel.style.cssText = 'min-width:32px;font-size:0.65rem;color:var(--muted)';
+    valLabel.textContent = val > 0 ? val : '';
+
+    barWrap.appendChild(barFill);
+    row.appendChild(label);
+    row.appendChild(barWrap);
+    row.appendChild(valLabel);
+    container.appendChild(row);
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 13: Top Bar
 // ═══════════════════════════════════════════════════════════════════════════
 
 function updateTopBar() {
   document.getElementById('topSteps').textContent = '\uD83D\uDEB6 ' + fmtNum(stepCount);
-  var sh = getHistory(SLEEP_KEY)[todayIso()];
+  const sh = getHistory(SLEEP_KEY)[todayIso()];
   document.getElementById('topSleep').textContent = sh ? '\uD83D\uDE34 ' + sh.toFixed(1) + 'h' : '\uD83D\uDE34 \u2014';
   document.getElementById('topWater').textContent = '\uD83D\uDCA7 ' + waterCount;
 }
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 14: Motion Handlers (fix #4, #5)
+// SECTION 14: Motion Handlers
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Named sleep motion handler — separate from step handler (fix #5) */
+/** Named sleep motion handler — separate from step handler */
 function handleSleepMotion(e) {
-  var g = e.accelerationIncludingGravity;
+  const g = e.accelerationIncludingGravity;
   if (!g || g.x === null) return;
-  var accel = Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z);
-  var now = Date.now();
+  const accel = Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z);
 
   if (sleepMode && !sleepConfirmed) {
-    var delta = Math.abs(accel - lastSleepAccel);
+    const delta = Math.abs(accel - lastSleepAccel);
     if (delta < STILLNESS_THRESH) {
-      if (!stillnessStart) stillnessStart = now;
-      if (now - stillnessStart >= SLEEP_CONFIRM_MS) {
+      if (!stillnessStart) stillnessStart = Date.now();
+      if (Date.now() - stillnessStart >= SLEEP_CONFIRM_MS) {
         sleepConfirmed = true;
         saveSleepSession({ active: true, start: sleepStart, confirmed: true });
         updateSleepUI();
@@ -611,12 +737,12 @@ function handleSleepMotion(e) {
   }
 }
 
-/** Step counter motion handler — no sleep logic (fix #4) */
+/** Step counter motion handler — no sleep logic */
 function handleMotion(e) {
-  var g = e.accelerationIncludingGravity;
+  const g = e.accelerationIncludingGravity;
   if (!g || g.x === null) return;
-  var accel = Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z);
-  var now = Date.now();
+  const accel = Math.sqrt(g.x * g.x + g.y * g.y + g.z * g.z);
+  const now = Date.now();
 
   // Step detection only — no sleep logic here
   if (isRunning && accel > threshold && lastAccel <= threshold && (now - lastStepTime) > STEP_DEBOUNCE_MS) {
@@ -625,16 +751,25 @@ function handleMotion(e) {
     lastStepTime = now;
     saveTodayVal(STEPS_KEY, stepCount);
     addToTotalSteps(1);
-    updateStepsUI();
 
-    var c = document.getElementById('ringCenter');
+    // FIX 11: Track hourly steps
+    const hour = new Date().getHours();
+    const hourlyKey = 'st_hourly_' + todayIso();
+    const hourly = JSON.parse(safeGet(hourlyKey, '{}'));
+    hourly[hour] = (hourly[hour] || 0) + 1;
+    safeSet(hourlyKey, JSON.stringify(hourly));
+
+    // FIX 6: Only bump on real steps
+    updateStepsUI(true);
+
+    const c = document.getElementById('ringCenter');
     c.classList.remove('step-flash');
     void c.offsetWidth;
     c.classList.add('step-flash');
 
     // Announce milestones to screen readers
     if (stepCount % 1000 === 0) {
-      var announcer = document.getElementById('stepAnnouncer');
+      const announcer = document.getElementById('stepAnnouncer');
       if (announcer) announcer.textContent = stepCount + ' pas atteints';
     }
   }
@@ -643,7 +778,7 @@ function handleMotion(e) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 15: Start / Stop Steps (fix #13)
+// SECTION 15: Start / Stop Steps
 // ═══════════════════════════════════════════════════════════════════════════
 
 function persistRunningState() {
@@ -654,7 +789,6 @@ function persistRunningState() {
   } else {
     try { localStorage.removeItem(ACTIVE_START_KEY); } catch (e) { /* ignore */ }
   }
-  // Persist threshold too
   safeSet(SENS_KEY, threshold.toString());
 }
 
@@ -673,13 +807,13 @@ function startSteps() {
   activeStart = Date.now();
   window.addEventListener('devicemotion', handleMotion);
 
-  var btn = document.getElementById('btnStart');
+  const btn = document.getElementById('btnStart');
   btn.textContent = 'ARRETER';
   btn.style.background = 'linear-gradient(135deg,#ff4444,#cc0000)';
   btn.style.boxShadow = '0 4px 20px rgba(255,68,68,0.3)';
 
   // Update status pill
-  var pill = document.getElementById('statusPill');
+  const pill = document.getElementById('statusPill');
   if (pill) { pill.classList.add('active'); document.getElementById('statusText').textContent = 'ACTIF'; }
 
   persistRunningState();
@@ -690,12 +824,12 @@ function stopSteps() {
   if (activeStart) { totalActiveMs += Date.now() - activeStart; activeStart = null; }
   window.removeEventListener('devicemotion', handleMotion);
 
-  var btn = document.getElementById('btnStart');
+  const btn = document.getElementById('btnStart');
   btn.textContent = 'DEMARRER';
   btn.style.background = '';
   btn.style.boxShadow = '';
 
-  var pill = document.getElementById('statusPill');
+  const pill = document.getElementById('statusPill');
   if (pill) { pill.classList.remove('active'); document.getElementById('statusText').textContent = 'INACTIF'; }
 
   persistRunningState();
@@ -704,14 +838,14 @@ function stopSteps() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 16: Sleep Mode (fix #5, #6)
+// SECTION 16: Sleep Mode (FIX 1, 2, 7)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function saveSleepSession(obj) {
   safeSet(SLEEP_SESSION_KEY, JSON.stringify(obj));
 }
 
-/** activateSleepMode — does NOT add handleMotion listener (fix #5) */
+/** activateSleepMode — FIX 1: Remove handleMotion first, then add handleSleepMotion */
 function activateSleepMode() {
   sleepMode       = true;
   sleepStart      = Date.now();
@@ -726,34 +860,50 @@ function activateSleepMode() {
       !motionGranted) {
     document.getElementById('permOverlay').classList.remove('hidden');
   } else if (typeof DeviceMotionEvent !== 'undefined') {
-    // Only add sleep motion handler — NOT handleMotion (fix #5)
+    // FIX 1: Remove step listener first (mutual exclusion)
+    window.removeEventListener('devicemotion', handleMotion);
+    // Then add sleep motion handler
     window.addEventListener('devicemotion', handleSleepMotion);
   }
+
+  // FIX 2: Backup interval that confirms sleep even if devicemotion stops firing
+  sleepCheckInterval = setInterval(function() {
+    if (!sleepConfirmed && stillnessStart && Date.now() - stillnessStart >= SLEEP_CONFIRM_MS) {
+      sleepConfirmed = true;
+      sleepStart = sleepStart || Date.now();
+      updateSleepUI();
+    }
+  }, 5000);
 
   updateSleepUI();
 }
 
-/** deactivateSleepMode — uses todayIso() for wake date (fix #6) */
+/** deactivateSleepMode — FIX 7: attribute to sleep START date, FIX 1: re-add handleMotion */
 function deactivateSleepMode() {
   if (!sleepStart) { sleepMode = false; updateSleepUI(); return; }
 
-  var wakeTime = Date.now();
-  var durationMs = wakeTime - sleepStart;
-  var durationHours = durationMs / 3600000;
+  const wakeTime = Date.now();
+  const durationMs = wakeTime - sleepStart;
+  const durationHours = durationMs / 3600000;
 
   // Only save if real sleep (> 30min, < 16h)
   if (durationMs > MIN_SLEEP_MS && durationMs < MAX_SLEEP_MS) {
-    // Use todayIso() for wake date attribution (fix #6)
-    var date = todayIso();
-    var h = getHistory(SLEEP_KEY);
-    h[date] = parseFloat(durationHours.toFixed(2));
+    // FIX 7: Use sleep START date for attribution (not wake date)
+    const sleepDate = dateToIso(new Date(sleepStart));
+    const h = getHistory(SLEEP_KEY);
+    h[sleepDate] = parseFloat(durationHours.toFixed(2));
     setHistory(SLEEP_KEY, h);
   }
 
   saveSleepSession({ active: false, start: sleepStart, end: wakeTime, confirmed: sleepConfirmed });
 
-  // Remove named sleep motion listener (fix #5)
+  // FIX 1: Remove sleep motion listener
   window.removeEventListener('devicemotion', handleSleepMotion);
+  // FIX 1: Re-add step listener IF isRunning
+  if (isRunning) window.addEventListener('devicemotion', handleMotion);
+
+  // FIX 2: Clear backup interval
+  clearInterval(sleepCheckInterval);
 
   sleepMode      = false;
   sleepConfirmed = false;
@@ -765,19 +915,18 @@ function deactivateSleepMode() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 17: Water Reminders (fix #14)
+// SECTION 17: Water Reminders
 // ═══════════════════════════════════════════════════════════════════════════
 
 function resetWaterReminder() {
-  // Save last drink timestamp
   safeSet(LAST_DRINK_KEY, Date.now().toString());
   if (waterReminderInterval) clearInterval(waterReminderInterval);
   waterReminderInterval = setInterval(function() {
     if (waterCount < waterGoal) {
-      var lastDrink = parseInt(safeGet(LAST_DRINK_KEY, '0'), 10);
-      var elapsed = Date.now() - lastDrink;
+      const lastDrink = parseInt(safeGet(LAST_DRINK_KEY, '0'), 10);
+      const elapsed = Date.now() - lastDrink;
       if (elapsed >= WATER_REMINDER_MS) {
-        var el = document.getElementById('waterReminder');
+        const el = document.getElementById('waterReminder');
         el.classList.add('show');
         setTimeout(function() { el.classList.remove('show'); }, 8000);
       }
@@ -787,7 +936,34 @@ function resetWaterReminder() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 18: Load State from Storage
+// SECTION 18: PWA Notifications (FIX 12)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendNotif(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.showNotification(title, { body: body, icon: 'icon.svg' });
+    });
+  }
+}
+
+// FIX 12: Streak danger notification (18h check)
+function checkStreakDanger() {
+  const now = new Date();
+  if (now.getHours() >= 18 && stepCount < dailyGoal * 0.8) {
+    sendNotif('Streak en danger !', 'Tu es a ' + Math.round(stepCount / dailyGoal * 100) + '% de ton objectif. Bouge-toi !');
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 19: Load State from Storage (FIX 5: date-aware active time)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function loadAll() {
@@ -796,8 +972,8 @@ function loadAll() {
   dailyGoal  = parseInt(safeGet(GOAL_KEY, '10000'), 10);
   waterGoal  = parseInt(safeGet(WGOAL_KEY, '8'), 10);
 
-  // Load sensitivity & persist threshold (fix #13)
-  var savedSens = safeGet(SENS_KEY, null);
+  // Load sensitivity & persist threshold
+  const savedSens = safeGet(SENS_KEY, null);
   if (savedSens) {
     threshold = parseFloat(savedSens);
     document.querySelectorAll('#sensChips .chip').forEach(function(c) {
@@ -806,10 +982,17 @@ function loadAll() {
     });
   }
 
-  // Load running state (fix #13)
-  totalActiveMs = parseInt(safeGet(ACTIVE_MS_KEY, '0'), 10);
-  var wasRunning = safeGet(RUNNING_KEY, 'false') === 'true';
-  var savedActiveStart = safeGet(ACTIVE_START_KEY, null);
+  // FIX 5: Load active time only if same date
+  const savedActiveDate = safeGet(ACTIVE_DATE_KEY);
+  if (savedActiveDate === todayIso()) {
+    totalActiveMs = parseInt(safeGet(ACTIVE_MS_KEY, '0'), 10);
+  } else {
+    totalActiveMs = 0;
+  }
+
+  // Load running state
+  const wasRunning = safeGet(RUNNING_KEY, 'false') === 'true';
+  const savedActiveStart = safeGet(ACTIVE_START_KEY, null);
   if (wasRunning) {
     if (savedActiveStart) {
       totalActiveMs += Date.now() - parseInt(savedActiveStart, 10);
@@ -819,29 +1002,37 @@ function loadAll() {
 
   // Sleep: load active session
   try {
-    var sd = JSON.parse(localStorage.getItem(SLEEP_SESSION_KEY) || 'null');
+    const sd = JSON.parse(localStorage.getItem(SLEEP_SESSION_KEY) || 'null');
     if (sd && sd.active) {
       sleepMode      = true;
       sleepStart     = sd.start;
       sleepConfirmed = sd.confirmed || false;
     }
   } catch (e) { /* ignore */ }
+
+  // FIX 10: Load history mode preference
+  historyDays = parseInt(safeGet(HISTORY_MODE_KEY, '7'), 10);
+  updateHistoryToggleUI();
+
+  // Init transformation name tracking
+  lastTransformName = getCurrentTransformation(getTotalAllTimeSteps()).name;
 }
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 19: Midnight Reset (fix #13)
+// SECTION 20: Midnight Reset
 // ═══════════════════════════════════════════════════════════════════════════
 
 function checkMidnightReset() {
-  var lastDate = safeGet(LAST_DATE_KEY, null);
-  var today = todayIso();
+  const lastDate = safeGet(LAST_DATE_KEY, null);
+  const today = todayIso();
   if (lastDate && lastDate !== today) {
     // New day
     waterCount = 0;
     saveTodayVal(WATER_KEY, 0);
     stepCount = todayVal(STEPS_KEY);
     totalActiveMs = 0;
+    goalNotifSent = false;
     persistRunningState();
     updateStepsUI();
     updateWaterUI();
@@ -852,7 +1043,61 @@ function checkMidnightReset() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 20: Event Listeners & Init
+// SECTION 21: Smart Intervals (FIX 4: pause when hidden)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function updateActiveMinutes() {
+  if (isRunning) {
+    const ams = totalActiveMs + (Date.now() - (activeStart || Date.now()));
+    document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
+    // FIX 5: Save active date
+    safeSet(ACTIVE_DATE_KEY, todayIso());
+  }
+  if (sleepMode && sleepConfirmed) updateSleepUI();
+  // FIX 12: Check streak danger at 18h+
+  checkStreakDanger();
+}
+
+function startIntervals() {
+  midnightInterval = setInterval(checkMidnightReset, 60000);
+  activeInterval = setInterval(updateActiveMinutes, 10000);
+}
+
+function stopIntervals() {
+  clearInterval(midnightInterval);
+  clearInterval(activeInterval);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22: History Toggle (FIX 10)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function updateHistoryToggleUI() {
+  document.querySelectorAll('.history-toggle-btn').forEach(function(btn) {
+    btn.classList.remove('active');
+    if (parseInt(btn.dataset.days) === historyDays) btn.classList.add('active');
+  });
+}
+
+function setupHistoryToggles() {
+  document.querySelectorAll('.history-toggle').forEach(function(toggle) {
+    toggle.querySelectorAll('.history-toggle-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        historyDays = parseInt(btn.dataset.days);
+        safeSet(HISTORY_MODE_KEY, historyDays.toString());
+        updateHistoryToggleUI();
+        renderStepsHistory();
+        renderSleepHistory();
+        renderWaterHistory();
+      });
+    });
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
 // iOS permission overlay
@@ -876,7 +1121,7 @@ document.getElementById('btnPerm').addEventListener('click', function() {
 // Tab navigation
 document.querySelectorAll('.nav-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
-    var tabId = btn.dataset.tab;
+    const tabId = btn.dataset.tab;
     document.querySelectorAll('.tab-page').forEach(function(p) { p.classList.remove('active'); });
     document.querySelectorAll('.nav-btn').forEach(function(b) {
       b.classList.remove('active');
@@ -885,7 +1130,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     document.getElementById('tab-' + tabId).classList.add('active');
     btn.classList.add('active');
     btn.setAttribute('aria-selected', 'true');
-    if (tabId === 'steps') renderStepsHistory();
+    if (tabId === 'steps') { renderStepsHistory(); renderHourlyChart(); }
     if (tabId === 'sleep') renderSleepHistory();
     if (tabId === 'water') updateWaterUI();
   });
@@ -947,36 +1192,37 @@ document.getElementById('btnWaterGoalUp').addEventListener('click', function() {
   updateWaterUI();
 });
 
-// Copy sync code
+// Copy sync code (FIX 8: now async)
 document.getElementById('btnCopy').addEventListener('click', function() {
-  var code = generateSyncCode();
-  var btn = document.getElementById('btnCopy');
-  var copyFn = function(text) {
-    try { navigator.clipboard.writeText(text); return true; } catch (e) { /* ignore */ }
-    try {
-      var el = document.createElement('textarea');
-      el.value = text; el.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(el); el.select(); document.execCommand('copy');
-      document.body.removeChild(el); return true;
-    } catch (e) { return false; }
-  };
-  if (copyFn(code)) {
-    btn.textContent = '\u2705 Code copie !'; btn.classList.add('copied');
-    setTimeout(function() { btn.textContent = '\uD83D\uDCCB Copier le code de sync'; btn.classList.remove('copied'); }, 2500);
-  }
+  generateSyncCode().then(function(code) {
+    const btn = document.getElementById('btnCopy');
+    const copyFn = function(text) {
+      try { navigator.clipboard.writeText(text); return true; } catch (e) { /* ignore */ }
+      try {
+        const el = document.createElement('textarea');
+        el.value = text; el.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(el); el.select(); document.execCommand('copy');
+        document.body.removeChild(el); return true;
+      } catch (e) { return false; }
+    };
+    if (copyFn(code)) {
+      btn.textContent = '\u2705 Code copie !'; btn.classList.add('copied');
+      setTimeout(function() { btn.textContent = '\uD83D\uDCCB Copier le code de sync'; btn.classList.remove('copied'); }, 2500);
+    }
+  });
 });
 
-// Midnight reset — visibilitychange (fix #13)
+// FIX 4: Smart visibility change — pause/resume intervals
 document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'hidden') {
+    stopIntervals();
+  } else {
     checkMidnightReset();
+    startIntervals();
   }
 });
 
-// Midnight reset — 60s interval (fix #13)
-setInterval(function() { checkMidnightReset(); }, 60000);
-
-// beforeunload — save state and warn if running (fix #17)
+// beforeunload — save state and warn if running
 window.addEventListener('beforeunload', function(e) {
   persistRunningState();
   if (isRunning) {
@@ -992,15 +1238,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Active minutes interval
-setInterval(function() {
-  if (isRunning) {
-    var ams = totalActiveMs + (Date.now() - (activeStart || Date.now()));
-    document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
-  }
-  if (sleepMode && sleepConfirmed) updateSleepUI();
-}, 10000);
-
 // ── Init ──
 checkMidnightReset();
 loadAll();
@@ -1009,3 +1246,6 @@ updateSleepUI();
 updateWaterUI();
 updateTransformationUI();
 resetWaterReminder();
+renderHourlyChart();
+setupHistoryToggles();
+startIntervals();
