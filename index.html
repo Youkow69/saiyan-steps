@@ -8,314 +8,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Saiyan Tracker" />
   <meta name="theme-color" content="#FFD700" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline';">
-  <title>Saiyan Tracker ⚡</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';">
+  <title>Saiyan Tracker</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
-
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0a0a0f;
-      --bg-card: #12151f;
-      --stroke: rgba(255,255,255,0.07);
-      --text: #f0f4ff;
-      --muted: #7a8aaa;
-      --gold: #FFD700;
-      --orange: #FF8C00;
-      --red: #FF4444;
-      --green: #39FF14;
-      --blue: #37B7FF;
-      --purple: #9B59B6;
-      --gradient-ki: linear-gradient(135deg, #FFD700, #FF8C00, #FF4500);
-      --gradient-sleep: linear-gradient(135deg, #667eea, #764ba2);
-      --gradient-water: linear-gradient(135deg, #00d4ff, #0066cc);
-    }
-
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
-
-    body { display: flex; flex-direction: column; height: 100dvh; }
-
-    /* ── Permission overlay ── */
-    .perm-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 200;
-      display: flex; align-items: center; justify-content: center; padding: 24px;
-    }
-    .perm-overlay.hidden { display: none; }
-    .perm-card {
-      background: var(--bg-card); border: 1px solid rgba(255,200,61,0.3);
-      border-radius: 24px; padding: 32px 24px; max-width: 360px; width: 100%;
-      text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px;
-    }
-    .perm-icon { font-size: 3rem; }
-    .perm-card h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.06em; color: var(--gold); }
-    .perm-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
-
-    /* ── Top summary bar ── */
-    .top-bar {
-      flex-shrink: 0;
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--stroke);
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .app-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.08em; background: var(--gradient-ki); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .summary-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-    .summary-chip { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--stroke); background: rgba(255,255,255,0.04); white-space: nowrap; }
-
-    /* ── Tab pages ── */
-    .tabs { flex: 1; overflow: hidden; position: relative; }
-    .tab-page { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 16px 24px; display: none; flex-direction: column; gap: 16px; }
-    .tab-page.active { display: flex; }
-
-    /* ── Bottom nav ── */
-    .bottom-nav {
-      flex-shrink: 0;
-      background: rgba(10,10,15,0.96);
-      backdrop-filter: blur(18px);
-      border-top: 1px solid var(--stroke);
-      display: flex;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    .nav-btn {
-      flex: 1; border: none; background: transparent; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; padding: 10px 4px; cursor: pointer; transition: color 0.15s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .nav-btn .nav-icon { font-size: 1.4rem; line-height: 1; }
-    .nav-btn .nav-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-    .nav-btn.active { color: var(--gold); }
-
-    /* ── Cards ── */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--stroke);
-      border-radius: 20px;
-      padding: 18px;
-    }
-    .card-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1rem;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .card-title span { color: var(--text); }
-
-    /* ── Buttons ── */
-    .btn-ki {
-      width: 100%; padding: 15px; border: none; border-radius: 16px;
-      background: var(--gradient-ki); color: #06090f;
-      font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
-      cursor: pointer; box-shadow: 0 4px 20px rgba(255,140,0,0.3);
-      transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-ki:active { transform: scale(0.97); }
-    .btn-ghost {
-      padding: 12px 18px; border: 1px solid var(--stroke); border-radius: 14px;
-      background: rgba(255,255,255,0.04); color: var(--text);
-      font-size: 0.88rem; font-weight: 700; cursor: pointer;
-      transition: background 0.15s ease; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-ghost:active { background: rgba(255,255,255,0.1); }
-    .btn-sleep {
-      width: 100%; padding: 15px; border: none; border-radius: 16px;
-      background: var(--gradient-sleep); color: #fff;
-      font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
-      cursor: pointer; box-shadow: 0 4px 20px rgba(102,126,234,0.3);
-      transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-sleep:active { transform: scale(0.97); }
-    .btn-water {
-      width: 100%; padding: 15px; border: none; border-radius: 16px;
-      background: var(--gradient-water); color: #fff;
-      font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
-      cursor: pointer; box-shadow: 0 4px 20px rgba(0,212,255,0.25);
-      transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-water:active { transform: scale(0.97); }
-
-    /* ── Step ring ── */
-    .ring-wrap { position: relative; width: min(260px, 68vw); height: min(260px, 68vw); margin: 0 auto; }
-    .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    .ring-bg { fill: none; stroke: rgba(255,255,255,0.06); }
-    .ring-fill { fill: none; stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
-    .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-    .step-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
-    .step-count { font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2.2rem, 9vw, 3rem); color: var(--gold); line-height: 1; transition: transform 0.1s ease; }
-    .step-count.bump { transform: scale(1.08); }
-    .step-goal-sub { font-size: 0.7rem; color: var(--muted); }
-
-    /* ── Stats row ── */
-    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .stat-card { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 16px; padding: 12px 8px; text-align: center; }
-    .stat-icon { font-size: 1.1rem; }
-    .stat-value { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.95rem; color: var(--gold); display: block; margin: 2px 0; }
-    .stat-name { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-
-    /* ── Progress bar ── */
-    .progress-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
-    .progress-row strong { color: var(--text); }
-    .progress-bar { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: inherit; transition: width 0.5s ease; }
-
-    /* ── Controls row ── */
-    .controls { display: flex; gap: 10px; }
-    .btn-reset { padding: 15px 16px; border: 1px solid var(--stroke); border-radius: 16px; background: rgba(255,255,255,0.04); color: var(--muted); font-size: 1.2rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .btn-reset:active { background: rgba(255,255,255,0.1); }
-
-    /* ── Goal control ── */
-    .goal-row { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .goal-label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
-    .goal-ctrl { display: flex; align-items: center; gap: 8px; }
-    .goal-ctrl button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--stroke); background: rgba(255,255,255,0.06); color: var(--text); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-    .goal-ctrl button:active { background: rgba(255,200,61,0.2); }
-    .goal-val { font-family: 'Orbitron', monospace; font-size: 0.88rem; font-weight: 700; color: var(--gold); min-width: 70px; text-align: center; }
-
-    /* ── Sensitivity ── */
-    .sens-row { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .chip-group { display: flex; gap: 6px; }
-    .chip { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--stroke); background: transparent; color: var(--muted); font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; -webkit-tap-highlight-color: transparent; }
-    .chip.active { border-color: rgba(255,200,61,0.6); background: rgba(255,200,61,0.12); color: var(--gold); }
-    .chip.active-blue { border-color: rgba(55,183,255,0.6); background: rgba(55,183,255,0.12); color: var(--blue); }
-
-    /* ── Status pill ── */
-    .status-pill { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--stroke); background: rgba(255,255,255,0.04); flex-shrink: 0; }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); transition: background 0.3s; }
-    .status-pill.active .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s ease-in-out infinite; }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-
-    /* ── History bars ── */
-    .history-wrap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; align-items: flex-end; height: 70px; }
-    .hbar-col { display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
-    .hbar { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.4s ease; }
-    .hbar.today-ki { background: linear-gradient(180deg, var(--gold), var(--orange)); }
-    .hbar.today-sleep { background: linear-gradient(180deg, #667eea, #764ba2); }
-    .hbar.today-water { background: linear-gradient(180deg, #00d4ff, #0066cc); }
-    .hbar.past { background: rgba(255,255,255,0.14); }
-    .hday { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-    .hval { font-size: 0.5rem; color: var(--muted); }
-
-    /* ── Sync section ── */
-    .sync-card { background: var(--bg-card); border: 1px solid rgba(255,200,61,0.2); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-    .sync-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
-    .sync-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
-    .sync-code-box { background: rgba(0,0,0,0.4); border: 1px solid var(--stroke); border-radius: 10px; padding: 10px 12px; font-family: 'Orbitron', monospace; font-size: 0.6rem; color: var(--gold); word-break: break-all; letter-spacing: 0.04em; min-height: 44px; }
-    .btn-copy { width: 100%; padding: 11px; border: 1px solid rgba(255,200,61,0.4); border-radius: 12px; background: rgba(255,200,61,0.08); color: var(--gold); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s ease; -webkit-tap-highlight-color: transparent; }
-    .btn-copy:active { background: rgba(255,200,61,0.18); transform: scale(0.98); }
-    .btn-copy.copied { color: var(--green); border-color: rgba(57,255,20,0.4); background: rgba(57,255,20,0.08); }
-
-    /* ── Sleep tab ── */
-    .sleep-status-card { background: var(--bg-card); border: 1px solid rgba(102,126,234,0.25); border-radius: 20px; padding: 20px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .sleep-icon { font-size: 3rem; line-height: 1; animation: float 3s ease-in-out infinite; }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-    .sleep-big { font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2rem, 8vw, 2.8rem); color: #a78bfa; line-height: 1; }
-    .sleep-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-    .sleep-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .sleep-time-card { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 14px; padding: 12px; text-align: center; }
-    .sleep-time-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
-    .sleep-time-val { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: #a78bfa; }
-    .sleep-detecting { font-size: 0.75rem; color: var(--muted); text-align: center; animation: pulse 2s ease-in-out infinite; }
-    .sleep-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .sleep-stage { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 12px; padding: 10px 6px; text-align: center; }
-    .sleep-stage-val { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: #a78bfa; }
-    .sleep-stage-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
-
-    /* ── Water tab ── */
-    .water-big-display { text-align: center; }
-    .water-ml { font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2rem, 8vw, 2.8rem); color: var(--blue); line-height: 1; }
-    .water-sublabel { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
-    .glasses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .glass-btn {
-      aspect-ratio: 1; border: 2px solid var(--stroke); border-radius: 16px;
-      background: rgba(255,255,255,0.03); cursor: pointer; font-size: 1.6rem;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; position: relative; overflow: hidden;
-    }
-    .glass-btn.filled { border-color: rgba(0,212,255,0.5); background: rgba(0,150,255,0.15); }
-    .glass-btn.filled::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%; background: rgba(0,180,255,0.25); transition: height 0.3s ease; }
-    .glass-btn:active { transform: scale(0.93); }
-    .glass-btn.pop { animation: glass-pop 0.25s ease; }
-    @keyframes glass-pop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
-    .water-goal-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--muted); }
-    .water-reminder { padding: 12px; background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15); border-radius: 14px; text-align: center; font-size: 0.82rem; color: var(--blue); font-weight: 700; display: none; }
-    .water-reminder.show { display: block; }
-
-    /* ── Flash effect ── */
-    @keyframes step-flash { 0% { background: rgba(255,200,61,0.12); } 100% { background: transparent; } }
-    .step-flash { animation: step-flash 0.3s ease-out; }
-
-    /* ── Footer ── */
-    footer { text-align: center; font-size: 0.65rem; color: var(--muted); opacity: 0.45; padding: 6px 0 10px; letter-spacing: 0.04em; flex-shrink: 0; }
-
-    /* ── 1.9 Hidden utility ── */
-    .hidden { display: none !important; }
-
-    /* ── Sprint 1: Toast notifications (fix #3) ── */
-    .toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--bg-card);
-      border: 1px solid rgba(255,200,61,0.4);
-      color: var(--text);
-      font-size: 0.82rem;
-      font-weight: 700;
-      padding: 10px 20px;
-      border-radius: 14px;
-      z-index: 300;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-      pointer-events: auto;
-    }
-
-    /* ── 1.10 Accessibility ── */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      border: 0;
-    }
-
-    *:focus-visible {
-      outline: 2px solid var(--gold);
-      outline-offset: 2px;
-    }
-
-    /* ── Sprint 1: Minimum font size 0.75rem (fix #9) ── */
-    .summary-chip { font-size: max(0.75rem, 0.7rem); }
-    .nav-label { font-size: max(0.75rem, 0.62rem); }
-    .step-label { font-size: max(0.75rem, 0.62rem); }
-    .step-goal-sub { font-size: max(0.75rem, 0.7rem); }
-    .stat-name { font-size: max(0.75rem, 0.58rem); }
-    .hday { font-size: max(0.75rem, 0.52rem); }
-    .hval { font-size: max(0.75rem, 0.5rem); }
-    .sleep-stage-label { font-size: max(0.75rem, 0.58rem); }
-    .sleep-time-label { font-size: max(0.75rem, 0.62rem); }
-    .sync-code-box { font-size: max(0.75rem, 0.6rem); }
-    footer { font-size: max(0.75rem, 0.65rem); }
-  </style>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
@@ -325,7 +24,7 @@
     <div class="perm-icon">📱</div>
     <h2>Acces au mouvement</h2>
     <p>Saiyan Tracker a besoin de l'accelerometre pour detecter tes pas et ton sommeil. Autorise l'acces pour continuer.</p>
-    <button class="btn-ki" id="btnPerm" style="margin-top:4px">AUTORISER ⚡</button>
+    <button class="btn-ki" id="btnPerm" style="margin-top:4px" aria-label="Autoriser l'acces au mouvement">AUTORISER ⚡</button>
   </div>
 </div>
 
@@ -336,20 +35,27 @@
     <span class="summary-chip" id="topSteps">🚶 0</span>
     <span class="summary-chip" id="topSleep">😴 —</span>
     <span class="summary-chip" id="topWater">💧 0</span>
+    <span class="streak-badge hidden" id="streakBadge">🔥 0</span>
   </div>
 </div>
 
-<!-- 1.8 Screen reader announcer -->
+<!-- Screen reader announcer -->
 <div aria-live="polite" id="stepAnnouncer" class="sr-only"></div>
 
-<!-- Sprint 1: Toast element (fix #3) -->
+<!-- Toast element -->
 <div class="toast" id="toast" aria-live="assertive"></div>
 
 <!-- Tab pages -->
 <div class="tabs">
 
-  <!-- ── PAS TAB ── -->
+  <!-- PAS TAB -->
   <div class="tab-page active" id="tab-steps" role="tabpanel" aria-labelledby="nav-steps">
+
+    <!-- Transformation banner -->
+    <div class="transformation-banner">
+      <span class="transformation-level" id="transformLevel">🧍 Humain</span>
+      <span class="transformation-progress" id="transformProgress">50 000 pas avant Saiyan</span>
+    </div>
 
     <div class="ring-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10000" aria-label="Progression pas quotidiens" id="ringWrap">
       <svg class="ring-svg" viewBox="0 0 100 100">
@@ -383,28 +89,28 @@
     </div>
 
     <div class="controls">
-      <button class="btn-ki" id="btnStart" style="flex:1">DEMARRER</button>
-      <button class="btn-reset" id="btnReset">↺</button>
+      <button class="btn-ki" id="btnStart" style="flex:1" aria-label="Demarrer ou arreter le compteur de pas">DEMARRER</button>
+      <button class="btn-reset" id="btnReset" aria-label="Remettre les pas a zero">↺</button>
     </div>
 
-    <!-- 1.1 Status pill element -->
+    <!-- Status pill -->
     <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">INACTIF</span></div>
 
     <div class="goal-row">
       <span class="goal-label">Objectif pas</span>
       <div class="goal-ctrl">
-        <button id="btnGoalDown" aria-label="Diminuer l'objectif">−</button>
+        <button id="btnGoalDown" aria-label="Diminuer l'objectif de pas">−</button>
         <span class="goal-val" id="goalDisplay">10 000</span>
-        <button id="btnGoalUp" aria-label="Augmenter l'objectif">+</button>
+        <button id="btnGoalUp" aria-label="Augmenter l'objectif de pas">+</button>
       </div>
     </div>
 
     <div class="sens-row">
       <span class="goal-label">Sensibilite</span>
       <div class="chip-group" id="sensChips">
-        <button class="chip" data-thresh="10">Haute</button>
-        <button class="chip active" data-thresh="12">Normale</button>
-        <button class="chip" data-thresh="14">Basse</button>
+        <button class="chip" data-thresh="10" aria-label="Sensibilite haute">Haute</button>
+        <button class="chip active" data-thresh="12" aria-label="Sensibilite normale">Normale</button>
+        <button class="chip" data-thresh="14" aria-label="Sensibilite basse">Basse</button>
       </div>
     </div>
 
@@ -417,13 +123,13 @@
       <div class="sync-title">🔗 Code de synchronisation</div>
       <div class="sync-desc">Colle ce code dans Saiyan Fitness pour valider tes quetes (pas + sommeil + eau).</div>
       <div class="sync-code-box" id="syncCodeBox">— Lance le compteur pour generer un code —</div>
-      <button class="btn-copy" id="btnCopy">📋 Copier le code de sync</button>
+      <button class="btn-copy" id="btnCopy" aria-label="Copier le code de synchronisation">📋 Copier le code de sync</button>
     </div>
 
     <footer>Propulse par Katrava ⚡</footer>
   </div>
 
-  <!-- ── SOMMEIL TAB ── -->
+  <!-- SOMMEIL TAB -->
   <div class="tab-page" id="tab-sleep" role="tabpanel" aria-labelledby="nav-sleep">
 
     <div class="sleep-status-card" id="sleepStatusCard">
@@ -459,8 +165,8 @@
       </div>
     </div>
 
-    <button class="btn-sleep" id="btnSleepMode">😴 ACTIVER LE MODE SOMMEIL</button>
-    <button class="btn-ki hidden" id="btnWakeUp" style="background:linear-gradient(135deg,#FFD700,#FF8C00)">☀️ JE SUIS REVEILLE</button>
+    <button class="btn-sleep" id="btnSleepMode" aria-label="Activer le mode sommeil">😴 ACTIVER LE MODE SOMMEIL</button>
+    <button class="btn-ki hidden" id="btnWakeUp" style="background:linear-gradient(135deg,#FFD700,#FF8C00)" aria-label="Signaler le reveil">☀️ JE SUIS REVEILLE</button>
 
     <div class="card">
       <div class="card-title">📅 <span>Historique — 7 nuits</span></div>
@@ -475,7 +181,7 @@
     <footer>Propulse par Katrava ⚡</footer>
   </div>
 
-  <!-- ── EAU TAB ── -->
+  <!-- EAU TAB -->
   <div class="tab-page" id="tab-water" role="tabpanel" aria-labelledby="nav-water">
 
     <div class="card" style="text-align:center;padding:20px 18px">
@@ -497,15 +203,15 @@
     <div class="goal-row">
       <span class="goal-label">Objectif</span>
       <div class="goal-ctrl">
-        <button id="btnWaterGoalDown">−</button>
+        <button id="btnWaterGoalDown" aria-label="Diminuer l'objectif d'eau">−</button>
         <span class="goal-val" id="waterGoalDisplay">8</span>
-        <button id="btnWaterGoalUp">+</button>
+        <button id="btnWaterGoalUp" aria-label="Augmenter l'objectif d'eau">+</button>
       </div>
     </div>
 
     <div style="display:flex;gap:10px">
-      <button class="btn-water" style="flex:1" id="btnAddGlass">+ AJOUTER UN VERRE</button>
-      <button class="btn-reset" id="btnRemoveGlass" title="Retirer un verre">−</button>
+      <button class="btn-water" style="flex:1" id="btnAddGlass" aria-label="Ajouter un verre d'eau">+ AJOUTER UN VERRE</button>
+      <button class="btn-reset" id="btnRemoveGlass" title="Retirer un verre" aria-label="Retirer un verre d'eau">−</button>
     </div>
 
     <div class="card">
@@ -518,7 +224,7 @@
 
 </div>
 
-<!-- Bottom nav — 1.8 ARIA attributes -->
+<!-- Bottom nav -->
 <nav class="bottom-nav" role="tablist" aria-label="Navigation principale">
   <button class="nav-btn active" data-tab="steps" id="nav-steps" role="tab" aria-selected="true" aria-controls="tab-steps" aria-label="Pas">
     <span class="nav-icon">🚶</span>
@@ -534,810 +240,6 @@
   </button>
 </nav>
 
-<script>
-'use strict';
-
-// ── Constants & keys ───────────────────────────────────────────────────────────
-const STEPS_KEY  = 'st_steps';
-const SLEEP_KEY  = 'st_sleep';
-const WATER_KEY  = 'st_water';
-const GOAL_KEY   = 'st_goal';
-const WGOAL_KEY  = 'st_wgoal';
-const SENS_KEY   = 'st_sens';       // 1.2
-const RUNNING_KEY = 'st_running';   // 1.4
-const ACTIVE_MS_KEY = 'st_active_ms'; // 1.4
-const ACTIVE_START_KEY = 'st_active_start'; // 1.4
-
-// ── Sprint 1: Named constants (fix #2) ───────────────────────────────────────
-const STEP_TO_KM       = 0.00075;   // km per step
-const STEP_TO_KCAL     = 0.04;      // kcal per step
-const RING_CIRCUMFERENCE = 276.46;
-const GLASS_ML         = 250;       // ml per glass
-const SLEEP_CONFIRM_MS = 5 * 60 * 1000;  // 5 min stillness
-const STILLNESS_THRESH = 0.5;       // accelerometer delta
-const STEP_DEBOUNCE_MS = 300;       // min ms between steps
-const WATER_REMINDER_MS = 2 * 60 * 60 * 1000; // 2 hours
-const MAX_STEPS        = 999999;    // safety limit
-const MAX_WATER        = 50;        // safety limit
-const MIN_SLEEP_MS     = 30 * 60 * 1000;   // 30 min
-const MAX_SLEEP_MS     = 16 * 3600 * 1000; // 16 hours
-const SLEEP_PERFECT_H  = 8;        // perfect sleep hours
-const LAST_DRINK_KEY   = 'st_last_drink'; // fix #6
-
-function todayIso() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-function fmtNum(n) { return n.toLocaleString('fr-FR'); }
-
-// Sprint 1: Toast notification helper (fix #3)
-let _toastTimer = null;
-function showToast(msg, durationMs = 2500) {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('show'), durationMs);
-}
-
-// ── State ──────────────────────────────────────────────────────────────────────
-let stepCount     = 0;
-let dailyGoal     = 10000;
-let threshold     = 12;
-let isRunning     = false;
-let lastAccel     = 0;
-let lastStepTime  = 0;
-let activeStart   = null;
-let totalActiveMs = 0;
-let motionGranted = false;
-
-let sleepMode     = false;
-let sleepStart    = null;    // timestamp ms
-let sleepConfirmed = false;  // 5-min stillness confirmed
-let stillnessStart = null;
-let lastSleepAccel = Infinity;
-let sleepCheckInterval = null;
-
-let waterGoal     = 8;
-let waterCount    = 0;
-let waterReminderInterval = null;
-
-// ── Storage helpers ────────────────────────────────────────────────────────────
-function getHistory(key) {
-  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch(_) { return {}; }
-}
-function setHistory(key, obj) {
-  try { localStorage.setItem(key, JSON.stringify(obj)); } catch(_) {}
-}
-function todayVal(key) { return getHistory(key)[todayIso()] || 0; }
-function saveTodayVal(key, val) {
-  const h = getHistory(key);
-  h[todayIso()] = val;
-  setHistory(key, h);
-}
-
-// ── Load state from storage ────────────────────────────────────────────────────
-function loadAll() {
-  stepCount  = todayVal(STEPS_KEY);
-  waterCount = todayVal(WATER_KEY);
-  dailyGoal  = parseInt(localStorage.getItem(GOAL_KEY)  || '10000', 10);
-  waterGoal  = parseInt(localStorage.getItem(WGOAL_KEY) || '8', 10);
-
-  // 1.2 Load sensitivity
-  const savedSens = localStorage.getItem(SENS_KEY);
-  if (savedSens) {
-    threshold = parseFloat(savedSens);
-    // Update active chip
-    document.querySelectorAll('#sensChips .chip').forEach(c => {
-      c.classList.remove('active');
-      if (parseFloat(c.dataset.thresh) === threshold) c.classList.add('active');
-    });
-  }
-
-  // 1.4 Load running state
-  totalActiveMs = parseInt(localStorage.getItem(ACTIVE_MS_KEY) || '0', 10);
-  const wasRunning = localStorage.getItem(RUNNING_KEY) === 'true';
-  const savedActiveStart = localStorage.getItem(ACTIVE_START_KEY);
-  if (wasRunning) {
-    // Accumulate time from previous session
-    if (savedActiveStart) {
-      totalActiveMs += Date.now() - parseInt(savedActiveStart, 10);
-    }
-    // Auto-resume tracking
-    startSteps();
-  }
-
-  // Sleep: load active session if any
-  try {
-    const sd = JSON.parse(localStorage.getItem('st_sleep_session') || 'null');
-    if (sd && sd.active) {
-      sleepMode      = true;
-      sleepStart     = sd.start;
-      sleepConfirmed = sd.confirmed || false;
-    }
-  } catch(_) {}
-}
-
-// ── Sync code ──────────────────────────────────────────────────────────────────
-function generateSyncCode() {
-  const date = todayIso();
-  const sleepHistory = getHistory(SLEEP_KEY);
-  const sleepHours = sleepHistory[date] || 0;
-  const hash = btoa((stepCount + sleepHours + waterCount + date + 'saiyan').slice(0, 32)).slice(0, 12);
-  const data = { steps: stepCount, sleepHours, waterGlasses: waterCount, date, timestamp: Date.now(), hash, app: 'saiyan-tracker' };
-  return btoa(JSON.stringify(data));
-}
-
-// ── Cross-app sync to saiyan-fitness ──────────────────────────────────────────
-function syncToFitness() {
-  try {
-    const sleepHistory = getHistory(SLEEP_KEY);
-    const sleepHours = sleepHistory[todayIso()] || 0;
-    localStorage.setItem('saiyan_tracker_sync', JSON.stringify({
-      steps: stepCount,
-      sleepHours: sleepHours,
-      waterGlasses: waterCount,
-      date: todayIso(),
-      timestamp: Date.now()
-    }));
-  } catch(e) {}
-}
-
-
-// ── UI: Steps ─────────────────────────────────────────────────────────────────
-// Sprint 1: debounce with rAF (fix #5)
-let _stepsRafId = null;
-function updateStepsUI() {
-  if (_stepsRafId) return;
-  _stepsRafId = requestAnimationFrame(() => { _stepsRafId = null; _updateStepsUIImmediate(); });
-}
-function _updateStepsUIImmediate() {
-  const pct = Math.min(1, stepCount / dailyGoal);
-  const pctInt = Math.round(pct * 100);
-
-  const el = document.getElementById('stepDisplay');
-  el.textContent = fmtNum(stepCount);
-  el.classList.remove('bump');
-  void el.offsetWidth;
-  el.classList.add('bump');
-
-  document.getElementById('ringFill').style.strokeDashoffset = (RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
-  document.getElementById('progressFill').style.width = pctInt + '%';
-  document.getElementById('progressPct').textContent = pctInt + '%';
-  document.getElementById('distDisp').textContent = (stepCount * STEP_TO_KM).toFixed(2);
-  document.getElementById('calDisp').textContent = Math.round(stepCount * STEP_TO_KCAL);
-
-  let ams = totalActiveMs;
-  if (isRunning && activeStart) ams += Date.now() - activeStart;
-  document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
-
-  document.getElementById('goalValueDisp').textContent = fmtNum(dailyGoal);
-  document.getElementById('goalDisplay').textContent = fmtNum(dailyGoal);
-
-  document.getElementById('syncCodeBox').textContent = generateSyncCode();
-
-  // 1.8 Update ARIA progressbar
-  const ringWrap = document.getElementById('ringWrap');
-  if (ringWrap) {
-    ringWrap.setAttribute('aria-valuenow', stepCount);
-    ringWrap.setAttribute('aria-valuemax', dailyGoal);
-  }
-
-  updateTopBar();
-  renderStepsHistory();
-  syncToFitness();
-}
-
-function renderStepsHistory() {
-  const h = getHistory(STEPS_KEY);
-  renderHistory('stepsHistory', h, dailyGoal, 'ki');
-}
-
-// ── UI: Sleep ─────────────────────────────────────────────────────────────────
-function formatHM(ms) {
-  const totalMin = Math.round(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  return h + 'h' + (m < 10 ? '0' : '') + m;
-}
-
-function fmtTime(ts) {
-  if (!ts) return '—';
-  const d = new Date(ts);
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
-}
-
-function updateSleepUI() {
-  const sleepHistory = getHistory(SLEEP_KEY);
-  const date = todayIso();
-  const todaySleep = sleepHistory[date] || 0; // hours
-
-  const iconEl = document.getElementById('sleepIcon');
-  const durEl  = document.getElementById('sleepDurationDisp');
-  const lblEl  = document.getElementById('sleepStatusLabel');
-  const detectEl = document.getElementById('sleepDetecting');
-
-  const btnSleep  = document.getElementById('btnSleepMode');
-  const btnWakeUp = document.getElementById('btnWakeUp');
-
-  if (sleepMode) {
-    iconEl.textContent = '😴';
-    iconEl.style.animation = 'float 3s ease-in-out infinite';
-    if (!sleepConfirmed) {
-      durEl.textContent = '…';
-      lblEl.textContent = 'Mode sommeil actif depuis ' + fmtTime(sleepStart);
-      detectEl.classList.remove('hidden');
-    } else {
-      const elapsed = formatHM(Date.now() - sleepStart);
-      durEl.textContent = elapsed;
-      lblEl.textContent = '😴 Endormi depuis ' + fmtTime(sleepStart);
-      detectEl.classList.add('hidden');
-    }
-    btnSleep.classList.add('hidden');
-    btnWakeUp.classList.remove('hidden');
-  } else {
-    detectEl.classList.add('hidden');
-    btnSleep.classList.remove('hidden');
-    btnWakeUp.classList.add('hidden');
-    if (todaySleep > 0) {
-      iconEl.textContent = '☀️';
-      iconEl.style.animation = '';
-      durEl.textContent = todaySleep.toFixed(1) + 'h';
-      lblEl.textContent = '☀️ Dernier sommeil : ' + todaySleep.toFixed(1) + 'h';
-    } else {
-      iconEl.textContent = '😴';
-      iconEl.style.animation = 'float 3s ease-in-out infinite';
-      durEl.textContent = '—';
-      lblEl.textContent = 'Aucune donnee pour aujourd\'hui';
-    }
-  }
-
-  // Try to load last session times from storage
-  try {
-    const sd = JSON.parse(localStorage.getItem('st_sleep_session') || 'null');
-    if (sd) {
-      document.getElementById('sleepBedtime').textContent = fmtTime(sd.start) || '—';
-      document.getElementById('sleepWaketime').textContent = sd.end ? fmtTime(sd.end) : (sleepMode ? 'En cours' : '—');
-    }
-  } catch(_) {}
-
-  // Stats
-  const nights = Object.keys(sleepHistory).length;
-  const vals = Object.values(sleepHistory);
-  document.getElementById('sleepNights').textContent = nights;
-  if (todaySleep > 0) {
-    document.getElementById('sleepTotal').textContent = todaySleep.toFixed(1) + 'h';
-    const score = Math.min(100, Math.round((todaySleep / SLEEP_PERFECT_H) * 100));
-    document.getElementById('sleepScore').textContent = score + '%';
-  } else {
-    const lastNight = vals.length > 0 ? vals[vals.length - 1] : 0;
-    document.getElementById('sleepTotal').textContent = lastNight > 0 ? lastNight.toFixed(1) + 'h' : '—';
-    document.getElementById('sleepScore').textContent = lastNight > 0 ? Math.min(100, Math.round((lastNight / SLEEP_PERFECT_H) * 100)) + '%' : '—';
-  }
-
-  updateTopBar();
-  renderSleepHistory();
-}
-
-function renderSleepHistory() {
-  const h = getHistory(SLEEP_KEY); // values in hours
-  // convert to steps-scale for bar heights — max 12h
-  const normalized = {};
-  Object.entries(h).forEach(([k, v]) => { normalized[k] = Math.round(v * 1000 / 12); });
-  renderHistory('sleepHistory', normalized, 1000, 'sleep');
-}
-
-// ── UI: Water ─────────────────────────────────────────────────────────────────
-function updateWaterUI() {
-  const pct = Math.min(1, waterCount / waterGoal);
-  const pctInt = Math.round(pct * 100);
-  const ml = waterCount * GLASS_ML;
-
-  document.getElementById('waterMlDisp').textContent = ml >= 1000
-    ? (ml / 1000).toFixed(1) + ' L'
-    : ml + ' ml';
-  document.getElementById('waterProgressLabel').textContent = waterCount + ' / ' + waterGoal + ' verres';
-  document.getElementById('waterFill').style.width = pctInt + '%';
-  document.getElementById('waterPct').textContent = pctInt + '%';
-  document.getElementById('waterGoalDisplay').textContent = waterGoal;
-
-  // 1.7 Render glasses grid with star-rating pattern
-  const grid = document.getElementById('glassesGrid');
-  grid.innerHTML = '';
-  const total = Math.max(waterGoal, waterCount);
-  for (let i = 0; i < total; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'glass-btn' + (i < waterCount ? ' filled' : '');
-    btn.textContent = i < waterCount ? '🥤' : '🥛';
-    const idx = i;
-    btn.addEventListener('click', () => {
-      if (idx < waterCount) {
-        // Star-rating: clicking a filled glass unfills it and all after it
-        waterCount = idx;
-        saveTodayVal(WATER_KEY, waterCount);
-        updateWaterUI();
-      } else {
-        // Star-rating: clicking an empty glass fills it and all before it
-        waterCount = idx + 1;
-        saveTodayVal(WATER_KEY, waterCount);
-        updateWaterUI();
-        // Clear reminder
-        document.getElementById('waterReminder').classList.remove('show');
-        resetWaterReminder();
-      }
-      btn.classList.add('pop');
-      setTimeout(() => btn.classList.remove('pop'), 250);
-    });
-    grid.appendChild(btn);
-  }
-
-  updateTopBar();
-  renderWaterHistory();
-}
-
-function renderWaterHistory() {
-  const h = getHistory(WATER_KEY);
-  renderHistory('waterHistory', h, waterGoal, 'water');
-}
-
-function addGlass() {
-  if (waterCount >= MAX_WATER) { showToast('Limite atteinte : ' + MAX_WATER + ' verres max'); return; } // fix #4
-  waterCount++;
-  saveTodayVal(WATER_KEY, waterCount);
-  updateWaterUI();
-  // Clear reminder
-  document.getElementById('waterReminder').classList.remove('show');
-  resetWaterReminder();
-  syncToFitness();
-}
-
-function removeGlass() {
-  if (waterCount <= 0) return;
-  waterCount--;
-  saveTodayVal(WATER_KEY, waterCount);
-  updateWaterUI();
-  syncToFitness();
-}
-
-// ── Generic history renderer ───────────────────────────────────────────────────
-function renderHistory(containerId, history, goal, type) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-
-  const today = todayIso();
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
-  }
-
-  const maxVal = Math.max(goal, ...days.map(d => history[d] || 0), 1);
-  const dayLabels = ['Di','Lu','Ma','Me','Je','Ve','Sa'];
-
-  days.forEach(day => {
-    const val = history[day] || 0;
-    const h = Math.max(3, Math.round((val / maxVal) * 62));
-    const isToday = day === today;
-    const dow = new Date(day + 'T12:00:00').getDay();
-
-    const col = document.createElement('div');
-    col.className = 'hbar-col';
-
-    const bar = document.createElement('div');
-    bar.className = 'hbar ' + (isToday ? 'today-' + type : 'past');
-    bar.style.height = h + 'px';
-
-    const dl = document.createElement('span');
-    dl.className = 'hday';
-    dl.textContent = isToday ? 'Auj' : dayLabels[dow];
-
-    const vl = document.createElement('span');
-    vl.className = 'hval';
-    if (type === 'sleep') {
-      vl.textContent = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '—';
-    } else if (type === 'water') {
-      vl.textContent = val > 0 ? val + '🥤' : '—';
-    } else {
-      vl.textContent = val > 999 ? (val/1000).toFixed(1)+'k' : (val || '—');
-    }
-
-    col.appendChild(bar);
-    col.appendChild(dl);
-    col.appendChild(vl);
-    container.appendChild(col);
-  });
-}
-
-// ── Top bar ────────────────────────────────────────────────────────────────────
-function updateTopBar() {
-  document.getElementById('topSteps').textContent = '🚶 ' + fmtNum(stepCount);
-  const sh = getHistory(SLEEP_KEY)[todayIso()];
-  document.getElementById('topSleep').textContent = sh ? '😴 ' + sh.toFixed(1) + 'h' : '😴 —';
-  document.getElementById('topWater').textContent = '💧 ' + waterCount;
-}
-
-// ── 1.6 Named sleep motion handler ────────────────────────────────────────────
-function handleSleepMotion(e) {
-  // This is the same logic as in handleMotion for sleep, but named for removal
-  const g = e.accelerationIncludingGravity;
-  if (!g || g.x === null) return;
-  const accel = Math.sqrt(g.x ** 2 + g.y ** 2 + g.z ** 2);
-  const now = Date.now();
-
-  if (sleepMode && !sleepConfirmed) {
-    const delta = Math.abs(accel - lastSleepAccel);
-    if (delta < STILLNESS_THRESH) {
-      if (!stillnessStart) stillnessStart = now;
-      if (now - stillnessStart >= SLEEP_CONFIRM_MS) {
-        sleepConfirmed = true;
-        saveSleepSession({ active: true, start: sleepStart, confirmed: true });
-        updateSleepUI();
-      }
-    } else {
-      stillnessStart = null;
-    }
-    lastSleepAccel = accel;
-  }
-}
-
-// ── Step counter ───────────────────────────────────────────────────────────────
-function handleMotion(e) {
-  const g = e.accelerationIncludingGravity;
-  if (!g || g.x === null) return;
-  const accel = Math.sqrt(g.x ** 2 + g.y ** 2 + g.z ** 2);
-  const now = Date.now();
-
-  // Step detection
-  if (isRunning && accel > threshold && lastAccel <= threshold && (now - lastStepTime) > STEP_DEBOUNCE_MS) {
-    if (stepCount >= MAX_STEPS) { lastAccel = accel; return; } // fix #4 safety limit
-    stepCount++;
-    lastStepTime = now;
-    saveTodayVal(STEPS_KEY, stepCount);
-    updateStepsUI();
-    const c = document.getElementById('ringCenter');
-    c.classList.remove('step-flash');
-    void c.offsetWidth;
-    c.classList.add('step-flash');
-
-    // 1.8 Announce milestones to screen readers
-    if (stepCount % 1000 === 0) {
-      const announcer = document.getElementById('stepAnnouncer');
-      if (announcer) announcer.textContent = stepCount + ' pas atteints';
-    }
-  }
-  lastAccel = accel;
-
-  // Sleep stillness detection
-  if (sleepMode && !sleepConfirmed) {
-    const delta = Math.abs(accel - lastSleepAccel);
-    if (delta < STILLNESS_THRESH) {
-      if (!stillnessStart) stillnessStart = now;
-      if (now - stillnessStart >= SLEEP_CONFIRM_MS) {
-        sleepConfirmed = true;
-        saveSleepSession({ active: true, start: sleepStart, confirmed: true });
-        updateSleepUI();
-      }
-    } else {
-      stillnessStart = null;
-    }
-    lastSleepAccel = accel;
-  }
-}
-
-// ── 1.4 Persist running state helpers ─────────────────────────────────────────
-function persistRunningState() {
-  try {
-    localStorage.setItem(RUNNING_KEY, isRunning ? 'true' : 'false');
-    localStorage.setItem(ACTIVE_MS_KEY, totalActiveMs.toString());
-    if (activeStart) {
-      localStorage.setItem(ACTIVE_START_KEY, activeStart.toString());
-    } else {
-      localStorage.removeItem(ACTIVE_START_KEY);
-    }
-  } catch(_) {}
-}
-
-async function startSteps() {
-  if (typeof DeviceMotionEvent !== 'undefined' &&
-      typeof DeviceMotionEvent.requestPermission === 'function' &&
-      !motionGranted) {
-    document.getElementById('permOverlay').classList.remove('hidden');
-    return;
-  }
-  if (typeof DeviceMotionEvent === 'undefined') {
-    alert('Accelerometre non disponible sur cet appareil.');
-    return;
-  }
-  isRunning = true;
-  activeStart = Date.now();
-  window.addEventListener('devicemotion', handleMotion);
-
-  const btn = document.getElementById('btnStart');
-  btn.textContent = 'ARRETER';
-  btn.style.background = 'linear-gradient(135deg,#ff4444,#cc0000)';
-  btn.style.boxShadow = '0 4px 20px rgba(255,68,68,0.3)';
-
-  // 1.1 Update status pill
-  const pill = document.getElementById('statusPill');
-  if (pill) { pill.classList.add('active'); document.getElementById('statusText').textContent = 'ACTIF'; }
-
-  // 1.4 Persist running state
-  persistRunningState();
-}
-
-function stopSteps() {
-  isRunning = false;
-  if (activeStart) { totalActiveMs += Date.now() - activeStart; activeStart = null; }
-  window.removeEventListener('devicemotion', handleMotion);
-  const btn = document.getElementById('btnStart');
-  btn.textContent = 'DEMARRER';
-  btn.style.background = '';
-  btn.style.boxShadow = '';
-
-  // 1.1 Update status pill
-  const pill = document.getElementById('statusPill');
-  if (pill) { pill.classList.remove('active'); document.getElementById('statusText').textContent = 'INACTIF'; }
-
-  // 1.4 Persist running state
-  persistRunningState();
-
-  updateStepsUI();
-}
-
-// ── Sleep mode ────────────────────────────────────────────────────────────────
-function saveSleepSession(obj) {
-  try { localStorage.setItem('st_sleep_session', JSON.stringify(obj)); } catch(_) {}
-}
-
-function activateSleepMode() {
-  sleepMode       = true;
-  sleepStart      = Date.now();
-  sleepConfirmed  = false;
-  stillnessStart  = null;
-  lastSleepAccel  = Infinity;
-
-  saveSleepSession({ active: true, start: sleepStart, confirmed: false });
-
-  // Start listening for motion if not already
-  if (typeof DeviceMotionEvent !== 'undefined' &&
-      typeof DeviceMotionEvent.requestPermission === 'function' &&
-      !motionGranted) {
-    document.getElementById('permOverlay').classList.remove('hidden');
-  } else if (typeof DeviceMotionEvent !== 'undefined') {
-    // 1.6 Use named handler for sleep motion
-    window.addEventListener('devicemotion', handleSleepMotion);
-    window.addEventListener('devicemotion', handleMotion);
-  }
-
-  updateSleepUI();
-}
-
-function deactivateSleepMode() {
-  if (!sleepStart) { sleepMode = false; updateSleepUI(); return; }
-
-  const wakeTime = Date.now();
-  const durationMs = wakeTime - sleepStart;
-  const durationHours = durationMs / 3600000;
-
-  // Only save if it looks like real sleep (> 30min, < 16h)
-  if (durationMs > MIN_SLEEP_MS && durationMs < MAX_SLEEP_MS) {
-    // 1.3 Use WAKE date for attribution, not sleep start date
-    const date = new Date(wakeTime).toISOString().slice(0, 10);
-    const h = getHistory(SLEEP_KEY);
-    h[date] = parseFloat(durationHours.toFixed(2));
-    setHistory(SLEEP_KEY, h);
-  }
-
-  saveSleepSession({ active: false, start: sleepStart, end: wakeTime, confirmed: sleepConfirmed });
-
-  // 1.6 Remove named sleep motion listener
-  window.removeEventListener('devicemotion', handleSleepMotion);
-
-  sleepMode      = false;
-  sleepConfirmed = false;
-  sleepStart     = null;
-
-  updateSleepUI();
-  syncToFitness();
-}
-
-// ── Water reminders (fix #6: save last drink time) ───────────────────────────
-function resetWaterReminder() {
-  // Save last drink timestamp
-  try { localStorage.setItem(LAST_DRINK_KEY, Date.now().toString()); } catch(_) {}
-  if (waterReminderInterval) clearInterval(waterReminderInterval);
-  waterReminderInterval = setInterval(() => {
-    if (waterCount < waterGoal) {
-      const lastDrink = parseInt(localStorage.getItem(LAST_DRINK_KEY) || '0', 10);
-      const elapsed = Date.now() - lastDrink;
-      if (elapsed >= WATER_REMINDER_MS) {
-        const el = document.getElementById('waterReminder');
-        el.classList.add('show');
-        setTimeout(() => el.classList.remove('show'), 8000);
-      }
-    }
-  }, WATER_REMINDER_MS);
-}
-
-// ── iOS permission ────────────────────────────────────────────────────────────
-document.getElementById('btnPerm').addEventListener('click', async () => {
-  try {
-    const result = await DeviceMotionEvent.requestPermission();
-    if (result === 'granted') {
-      motionGranted = true;
-      document.getElementById('permOverlay').classList.add('hidden');
-      // Re-trigger whatever action was pending
-      if (document.querySelector('#tab-steps.active')) startSteps();
-      else if (sleepMode) {
-        window.addEventListener('devicemotion', handleMotion);
-        window.addEventListener('devicemotion', handleSleepMotion);
-      }
-    } else {
-      alert('Permission refusee. Active l\'acces dans Reglages > Safari.');
-    }
-  } catch(err) {
-    alert('Erreur : ' + err.message);
-  }
-});
-
-// ── Tab navigation ─────────────────────────────────────────────────────────────
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tabId = btn.dataset.tab;
-    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => {
-      b.classList.remove('active');
-      b.setAttribute('aria-selected', 'false'); // 1.8
-    });
-    document.getElementById('tab-' + tabId).classList.add('active');
-    btn.classList.add('active');
-    btn.setAttribute('aria-selected', 'true'); // 1.8
-    // Refresh history on tab switch
-    if (tabId === 'steps') renderStepsHistory();
-    if (tabId === 'sleep') renderSleepHistory();
-    if (tabId === 'water') { updateWaterUI(); }
-  });
-});
-
-// ── Step counter controls ─────────────────────────────────────────────────────
-document.getElementById('btnStart').addEventListener('click', () => {
-  if (isRunning) stopSteps(); else startSteps();
-});
-
-document.getElementById('btnReset').addEventListener('click', () => {
-  if (!confirm('Remettre a zero les pas d\'aujourd\'hui ?')) return;
-  stepCount = 0; totalActiveMs = 0;
-  if (activeStart) activeStart = Date.now();
-  saveTodayVal(STEPS_KEY, 0);
-  persistRunningState(); // 1.4
-  updateStepsUI();
-});
-
-document.getElementById('btnGoalDown').addEventListener('click', () => {
-  dailyGoal = Math.max(1000, dailyGoal - 1000);
-  localStorage.setItem(GOAL_KEY, dailyGoal);
-  updateStepsUI();
-});
-
-document.getElementById('btnGoalUp').addEventListener('click', () => {
-  dailyGoal = Math.min(50000, dailyGoal + 1000);
-  localStorage.setItem(GOAL_KEY, dailyGoal);
-  updateStepsUI();
-});
-
-// 1.2 Sensitivity chips — persist threshold
-document.querySelectorAll('#sensChips .chip').forEach(c => {
-  c.addEventListener('click', () => {
-    document.querySelectorAll('#sensChips .chip').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    threshold = parseFloat(c.dataset.thresh);
-    localStorage.setItem(SENS_KEY, threshold); // 1.2 persist
-  });
-});
-
-// ── Sleep controls ────────────────────────────────────────────────────────────
-document.getElementById('btnSleepMode').addEventListener('click', activateSleepMode);
-document.getElementById('btnWakeUp').addEventListener('click', deactivateSleepMode);
-
-// ── Water controls ────────────────────────────────────────────────────────────
-document.getElementById('btnAddGlass').addEventListener('click', addGlass);
-document.getElementById('btnRemoveGlass').addEventListener('click', removeGlass);
-
-document.getElementById('btnWaterGoalDown').addEventListener('click', () => {
-  waterGoal = Math.max(4, waterGoal - 2);
-  localStorage.setItem(WGOAL_KEY, waterGoal);
-  updateWaterUI();
-});
-
-document.getElementById('btnWaterGoalUp').addEventListener('click', () => {
-  waterGoal = Math.min(20, waterGoal + 2);
-  localStorage.setItem(WGOAL_KEY, waterGoal);
-  updateWaterUI();
-});
-
-// ── Copy sync code ─────────────────────────────────────────────────────────────
-document.getElementById('btnCopy').addEventListener('click', async () => {
-  const code = generateSyncCode();
-  const btn = document.getElementById('btnCopy');
-  const copy = async (text) => {
-    try { await navigator.clipboard.writeText(text); return true; } catch(_) {}
-    try {
-      const el = document.createElement('textarea');
-      el.value = text; el.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(el); el.select(); document.execCommand('copy');
-      document.body.removeChild(el); return true;
-    } catch(_) { return false; }
-  };
-  const ok = await copy(code);
-  if (ok) {
-    btn.textContent = '✅ Code copie !'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '📋 Copier le code de sync'; btn.classList.remove('copied'); }, 2500);
-  }
-});
-
-// ── Midnight reset for water ───────────────────────────────────────────────────
-function checkMidnightReset() {
-  const lastDate = localStorage.getItem('st_last_date');
-  const today = todayIso();
-  if (lastDate && lastDate !== today) {
-    // New day — water resets (steps/sleep save historically, so no reset needed)
-    waterCount = 0;
-    saveTodayVal(WATER_KEY, 0);
-    // Also reset step count for the new day display
-    stepCount = todayVal(STEPS_KEY);
-    updateStepsUI();
-    updateWaterUI();
-    updateSleepUI();
-  }
-  localStorage.setItem('st_last_date', today);
-}
-
-// 1.5 Robust midnight reset — visibilitychange listener
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    checkMidnightReset();
-  }
-});
-
-// 1.5 Robust midnight reset — interval every 60 seconds
-setInterval(() => {
-  checkMidnightReset();
-}, 60000);
-
-// 1.4 beforeunload warning if isRunning
-window.addEventListener('beforeunload', (e) => {
-  // Persist state before leaving
-  persistRunningState();
-  if (isRunning) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-});
-
-// ── Service worker ────────────────────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-}
-
-// ── Active minutes interval ───────────────────────────────────────────────────
-setInterval(() => {
-  if (isRunning) {
-    const ams = totalActiveMs + (Date.now() - (activeStart || Date.now()));
-    document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
-  }
-  if (sleepMode && sleepConfirmed) updateSleepUI();
-}, 10000);
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-checkMidnightReset();
-loadAll();
-updateStepsUI();
-updateSleepUI();
-updateWaterUI();
-resetWaterReminder();
-</script>
+<script src="js/app.js" defer></script>
 </body>
 </html>
