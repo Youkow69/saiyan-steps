@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Saiyan Tracker — style.css
-   All styles extracted from index.html + Sprint 1 fixes
+   All styles + Final round fixes (FIX 14, 15)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Reset ── */
@@ -12,7 +12,7 @@
   --bg-card: #12151f;
   --stroke: rgba(255,255,255,0.07);
   --text: #f0f4ff;
-  --muted: #7a8aaa;
+  --muted: #94a3c0;
   --gold: #FFD700;
   --orange: #FF8C00;
   --red: #FF4444;
@@ -70,7 +70,8 @@ body {
   text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
 .perm-icon { font-size: 3rem; }
-.perm-card h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 0.06em; color: var(--gold); }
+/* FIX 14: Replace Bebas Neue with Orbitron */
+.perm-card h2 { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; letter-spacing: 0.06em; color: var(--gold); }
 .perm-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
 
 /* ── Top summary bar ── */
@@ -85,7 +86,7 @@ body {
   gap: 8px;
 }
 .app-title {
-  font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.08em;
+  font-family: 'Orbitron', sans-serif; font-size: 1.3rem; letter-spacing: 0.08em;
   background: var(--gradient-ki); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .summary-chips { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -129,7 +130,7 @@ body {
   padding: 18px;
 }
 .card-title {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -144,7 +145,7 @@ body {
 .btn-ki {
   width: 100%; padding: 15px; border: none; border-radius: 16px;
   background: var(--gradient-ki); color: #06090f;
-  font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
+  font-family: 'Orbitron', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
   cursor: pointer; box-shadow: 0 4px 20px rgba(255,140,0,0.3);
   transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
 }
@@ -161,7 +162,7 @@ body {
 .btn-sleep {
   width: 100%; padding: 15px; border: none; border-radius: 16px;
   background: var(--gradient-sleep); color: #fff;
-  font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
+  font-family: 'Orbitron', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
   cursor: pointer; box-shadow: 0 4px 20px rgba(102,126,234,0.3);
   transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
 }
@@ -170,7 +171,7 @@ body {
 .btn-water {
   width: 100%; padding: 15px; border: none; border-radius: 16px;
   background: var(--gradient-water); color: #fff;
-  font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
+  font-family: 'Orbitron', sans-serif; font-size: 1.2rem; letter-spacing: 2px;
   cursor: pointer; box-shadow: 0 4px 20px rgba(0,212,255,0.25);
   transition: transform 0.1s ease; -webkit-tap-highlight-color: transparent;
 }
@@ -184,7 +185,7 @@ body {
 .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .step-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
 .step-count {
-  font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2.2rem, 9vw, 3rem);
+  font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2.2rem, 9vw, 3rem);
   color: var(--gold); line-height: 1; transition: transform 0.1s ease;
 }
 .step-count.bump { transform: scale(1.08); }
@@ -268,7 +269,7 @@ body {
   padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
 .transformation-level {
-  font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 0.06em; color: var(--gold);
+  font-family: 'Orbitron', sans-serif; font-size: 0.9rem; letter-spacing: 0.06em; color: var(--gold);
 }
 .transformation-progress {
   font-size: 0.72rem; color: var(--muted);
@@ -285,12 +286,18 @@ body {
 .hday { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
 .hval { font-size: 0.5rem; color: var(--muted); }
 
+/* ── History toggle ── */
+.history-toggle-btn {
+  font-size: 0.68rem;
+  padding: 4px 10px;
+}
+
 /* ── Sync section ── */
 .sync-card {
   background: var(--bg-card); border: 1px solid rgba(255,200,61,0.2); border-radius: 20px;
   padding: 16px; display: flex; flex-direction: column; gap: 10px;
 }
-.sync-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
+.sync-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
 .sync-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
 .sync-code-box {
   background: rgba(0,0,0,0.4); border: 1px solid var(--stroke); border-radius: 10px;
@@ -312,7 +319,7 @@ body {
   padding: 20px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .sleep-icon { font-size: 3rem; line-height: 1; animation: float 3s ease-in-out infinite; }
-.sleep-big { font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2rem, 8vw, 2.8rem); color: #a78bfa; line-height: 1; }
+.sleep-big { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2rem, 8vw, 2.8rem); color: #a78bfa; line-height: 1; }
 .sleep-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .sleep-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sleep-time-card { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 14px; padding: 12px; text-align: center; }
@@ -326,7 +333,7 @@ body {
 
 /* ── Water tab ── */
 .water-big-display { text-align: center; }
-.water-ml { font-family: 'Orbitron', monospace; font-weight: 900; font-size: clamp(2rem, 8vw, 2.8rem); color: var(--blue); line-height: 1; }
+.water-ml { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2rem, 8vw, 2.8rem); color: var(--blue); line-height: 1; }
 .water-sublabel { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
 .glasses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .glass-btn {
@@ -387,7 +394,7 @@ body {
   border-radius: 20px; padding: 24px; max-width: 340px; width: 100%;
   text-align: center; display: flex; flex-direction: column; gap: 12px;
 }
-.modal-card h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; color: var(--gold); }
+.modal-card h3 { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; color: var(--gold); }
 .modal-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
 .modal-actions { display: flex; gap: 10px; }
 .modal-actions button { flex: 1; }
