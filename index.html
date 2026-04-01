@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -115,9 +115,19 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📅 <span>Historique — 7 jours</span></div>
+      <div class="card-title">📅 <span>Historique</span></div>
+      <div class="history-toggle" style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="chip history-toggle-btn active" data-days="7">7J</button>
+        <button class="chip history-toggle-btn" data-days="30">30J</button>
+      </div>
       <div class="history-wrap" id="stepsHistory"></div>
     </div>
+
+    <!-- FIX 13: Hourly breakdown section -->
+    <details class="card">
+      <summary class="card-title" style="cursor:pointer;margin-bottom:0">⏰ <span>Repartition horaire</span></summary>
+      <div id="hourlyChart" style="display:flex;flex-direction:column;gap:3px;padding-top:10px"></div>
+    </details>
 
     <div class="sync-card">
       <div class="sync-title">🔗 Code de synchronisation</div>
@@ -169,7 +179,11 @@
     <button class="btn-ki hidden" id="btnWakeUp" style="background:linear-gradient(135deg,#FFD700,#FF8C00)" aria-label="Signaler le reveil">☀️ JE SUIS REVEILLE</button>
 
     <div class="card">
-      <div class="card-title">📅 <span>Historique — 7 nuits</span></div>
+      <div class="card-title">📅 <span>Historique</span></div>
+      <div class="history-toggle" style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="chip history-toggle-btn active" data-days="7">7J</button>
+        <button class="chip history-toggle-btn" data-days="30">30J</button>
+      </div>
       <div class="history-wrap" id="sleepHistory"></div>
     </div>
 
@@ -215,7 +229,11 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📅 <span>Historique — 7 jours</span></div>
+      <div class="card-title">📅 <span>Historique</span></div>
+      <div class="history-toggle" style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="chip history-toggle-btn active" data-days="7">7J</button>
+        <button class="chip history-toggle-btn" data-days="30">30J</button>
+      </div>
       <div class="history-wrap" id="waterHistory"></div>
     </div>
 
