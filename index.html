@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Saiyan Tracker" />
   <meta name="theme-color" content="#FFD700" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline';">
   <title>Saiyan Tracker ⚡</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -256,6 +257,26 @@
 
     /* ── Footer ── */
     footer { text-align: center; font-size: 0.65rem; color: var(--muted); opacity: 0.45; padding: 6px 0 10px; letter-spacing: 0.04em; flex-shrink: 0; }
+
+    /* ── 1.9 Hidden utility ── */
+    .hidden { display: none !important; }
+
+    /* ── 1.10 Accessibility ── */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    *:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
@@ -264,8 +285,8 @@
 <div class="perm-overlay hidden" id="permOverlay">
   <div class="perm-card">
     <div class="perm-icon">📱</div>
-    <h2>Accès au mouvement</h2>
-    <p>Saiyan Tracker a besoin de l'accéléromètre pour détecter tes pas et ton sommeil. Autorise l'accès pour continuer.</p>
+    <h2>Acces au mouvement</h2>
+    <p>Saiyan Tracker a besoin de l'accelerometre pour detecter tes pas et ton sommeil. Autorise l'acces pour continuer.</p>
     <button class="btn-ki" id="btnPerm" style="margin-top:4px">AUTORISER ⚡</button>
   </div>
 </div>
@@ -280,13 +301,16 @@
   </div>
 </div>
 
+<!-- 1.8 Screen reader announcer -->
+<div aria-live="polite" id="stepAnnouncer" class="sr-only"></div>
+
 <!-- Tab pages -->
 <div class="tabs">
 
   <!-- ── PAS TAB ── -->
   <div class="tab-page active" id="tab-steps">
 
-    <div class="ring-wrap">
+    <div class="ring-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10000" aria-label="Progression pas quotidiens" id="ringWrap">
       <svg class="ring-svg" viewBox="0 0 100 100">
         <defs>
           <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -318,21 +342,24 @@
     </div>
 
     <div class="controls">
-      <button class="btn-ki" id="btnStart" style="flex:1">DÉMARRER</button>
+      <button class="btn-ki" id="btnStart" style="flex:1">DEMARRER</button>
       <button class="btn-reset" id="btnReset">↺</button>
     </div>
+
+    <!-- 1.1 Status pill element -->
+    <div class="status-pill" id="statusPill"><span class="status-dot"></span><span id="statusText">INACTIF</span></div>
 
     <div class="goal-row">
       <span class="goal-label">Objectif pas</span>
       <div class="goal-ctrl">
-        <button id="btnGoalDown">−</button>
+        <button id="btnGoalDown" aria-label="Diminuer l'objectif">−</button>
         <span class="goal-val" id="goalDisplay">10 000</span>
-        <button id="btnGoalUp">+</button>
+        <button id="btnGoalUp" aria-label="Augmenter l'objectif">+</button>
       </div>
     </div>
 
     <div class="sens-row">
-      <span class="goal-label">Sensibilité</span>
+      <span class="goal-label">Sensibilite</span>
       <div class="chip-group" id="sensChips">
         <button class="chip" data-thresh="10">Haute</button>
         <button class="chip active" data-thresh="12">Normale</button>
@@ -347,12 +374,12 @@
 
     <div class="sync-card">
       <div class="sync-title">🔗 Code de synchronisation</div>
-      <div class="sync-desc">Colle ce code dans Saiyan Fitness pour valider tes quêtes (pas + sommeil + eau).</div>
-      <div class="sync-code-box" id="syncCodeBox">— Lance le compteur pour générer un code —</div>
+      <div class="sync-desc">Colle ce code dans Saiyan Fitness pour valider tes quetes (pas + sommeil + eau).</div>
+      <div class="sync-code-box" id="syncCodeBox">— Lance le compteur pour generer un code —</div>
       <button class="btn-copy" id="btnCopy">📋 Copier le code de sync</button>
     </div>
 
-    <footer>Propulsé par Katrava ⚡</footer>
+    <footer>Propulse par Katrava ⚡</footer>
   </div>
 
   <!-- ── SOMMEIL TAB ── -->
@@ -361,17 +388,17 @@
     <div class="sleep-status-card" id="sleepStatusCard">
       <div class="sleep-icon" id="sleepIcon">😴</div>
       <div class="sleep-big" id="sleepDurationDisp">—</div>
-      <div class="sleep-label" id="sleepStatusLabel">Aucune donnée</div>
-      <div class="sleep-detecting hidden" id="sleepDetecting">🔍 Détection du sommeil en cours…</div>
+      <div class="sleep-label" id="sleepStatusLabel">Aucune donnee</div>
+      <div class="sleep-detecting hidden" id="sleepDetecting">🔍 Detection du sommeil en cours…</div>
     </div>
 
     <div class="sleep-times">
       <div class="sleep-time-card">
-        <div class="sleep-time-label">🌙 Couché</div>
+        <div class="sleep-time-label">🌙 Couche</div>
         <div class="sleep-time-val" id="sleepBedtime">—</div>
       </div>
       <div class="sleep-time-card">
-        <div class="sleep-time-label">☀️ Levé</div>
+        <div class="sleep-time-label">☀️ Leve</div>
         <div class="sleep-time-val" id="sleepWaketime">—</div>
       </div>
     </div>
@@ -387,12 +414,12 @@
       </div>
       <div class="sleep-stage">
         <div class="sleep-stage-val" id="sleepNights">0</div>
-        <div class="sleep-stage-label">Nuits loguées</div>
+        <div class="sleep-stage-label">Nuits loguees</div>
       </div>
     </div>
 
     <button class="btn-sleep" id="btnSleepMode">😴 ACTIVER LE MODE SOMMEIL</button>
-    <button class="btn-ki hidden" id="btnWakeUp" style="background:linear-gradient(135deg,#FFD700,#FF8C00)">☀️ JE SUIS RÉVEILLÉ</button>
+    <button class="btn-ki hidden" id="btnWakeUp" style="background:linear-gradient(135deg,#FFD700,#FF8C00)">☀️ JE SUIS REVEILLE</button>
 
     <div class="card">
       <div class="card-title">📅 <span>Historique — 7 nuits</span></div>
@@ -400,11 +427,11 @@
     </div>
 
     <div class="card" style="font-size:0.78rem;color:var(--muted);line-height:1.6">
-      <div class="card-title">💡 <span>Comment ça marche</span></div>
-      Appuie sur "Mode Sommeil", pose ton téléphone sans le bouger. L'accéléromètre confirme que tu dors si le téléphone reste immobile pendant 5 minutes. Quand tu te lèves, rouvre l'app et appuie sur "Je suis réveillé".
+      <div class="card-title">💡 <span>Comment ca marche</span></div>
+      Appuie sur "Mode Sommeil", pose ton telephone sans le bouger. L'accelerometre confirme que tu dors si le telephone reste immobile pendant 5 minutes. Quand tu te leves, rouvre l'app et appuie sur "Je suis reveille".
     </div>
 
-    <footer>Propulsé par Katrava ⚡</footer>
+    <footer>Propulse par Katrava ⚡</footer>
   </div>
 
   <!-- ── EAU TAB ── -->
@@ -445,22 +472,22 @@
       <div class="history-wrap" id="waterHistory"></div>
     </div>
 
-    <footer>Propulsé par Katrava ⚡</footer>
+    <footer>Propulse par Katrava ⚡</footer>
   </div>
 
 </div>
 
-<!-- Bottom nav -->
-<nav class="bottom-nav">
-  <button class="nav-btn active" data-tab="steps" id="nav-steps">
+<!-- Bottom nav — 1.8 ARIA attributes -->
+<nav class="bottom-nav" role="tablist" aria-label="Navigation principale">
+  <button class="nav-btn active" data-tab="steps" id="nav-steps" role="tab" aria-selected="true" aria-label="Pas">
     <span class="nav-icon">🚶</span>
     <span class="nav-label">Pas</span>
   </button>
-  <button class="nav-btn" data-tab="sleep" id="nav-sleep">
+  <button class="nav-btn" data-tab="sleep" id="nav-sleep" role="tab" aria-selected="false" aria-label="Sommeil">
     <span class="nav-icon">😴</span>
     <span class="nav-label">Sommeil</span>
   </button>
-  <button class="nav-btn" data-tab="water" id="nav-water">
+  <button class="nav-btn" data-tab="water" id="nav-water" role="tab" aria-selected="false" aria-label="Eau">
     <span class="nav-icon">💧</span>
     <span class="nav-label">Eau</span>
   </button>
@@ -475,6 +502,10 @@ const SLEEP_KEY  = 'st_sleep';
 const WATER_KEY  = 'st_water';
 const GOAL_KEY   = 'st_goal';
 const WGOAL_KEY  = 'st_wgoal';
+const SENS_KEY   = 'st_sens';       // 1.2
+const RUNNING_KEY = 'st_running';   // 1.4
+const ACTIVE_MS_KEY = 'st_active_ms'; // 1.4
+const ACTIVE_START_KEY = 'st_active_start'; // 1.4
 
 function todayIso() { return new Date().toISOString().slice(0, 10); }
 function fmtNum(n) { return n.toLocaleString('fr-FR'); }
@@ -521,6 +552,30 @@ function loadAll() {
   waterCount = todayVal(WATER_KEY);
   dailyGoal  = parseInt(localStorage.getItem(GOAL_KEY)  || '10000', 10);
   waterGoal  = parseInt(localStorage.getItem(WGOAL_KEY) || '8', 10);
+
+  // 1.2 Load sensitivity
+  const savedSens = localStorage.getItem(SENS_KEY);
+  if (savedSens) {
+    threshold = parseFloat(savedSens);
+    // Update active chip
+    document.querySelectorAll('#sensChips .chip').forEach(c => {
+      c.classList.remove('active');
+      if (parseFloat(c.dataset.thresh) === threshold) c.classList.add('active');
+    });
+  }
+
+  // 1.4 Load running state
+  totalActiveMs = parseInt(localStorage.getItem(ACTIVE_MS_KEY) || '0', 10);
+  const wasRunning = localStorage.getItem(RUNNING_KEY) === 'true';
+  const savedActiveStart = localStorage.getItem(ACTIVE_START_KEY);
+  if (wasRunning) {
+    // Accumulate time from previous session
+    if (savedActiveStart) {
+      totalActiveMs += Date.now() - parseInt(savedActiveStart, 10);
+    }
+    // Auto-resume tracking
+    startSteps();
+  }
 
   // Sleep: load active session if any
   try {
@@ -569,6 +624,14 @@ function updateStepsUI() {
   document.getElementById('goalDisplay').textContent = fmtNum(dailyGoal);
 
   document.getElementById('syncCodeBox').textContent = generateSyncCode();
+
+  // 1.8 Update ARIA progressbar
+  const ringWrap = document.getElementById('ringWrap');
+  if (ringWrap) {
+    ringWrap.setAttribute('aria-valuenow', stepCount);
+    ringWrap.setAttribute('aria-valuemax', dailyGoal);
+  }
+
   updateTopBar();
   renderStepsHistory();
 }
@@ -633,7 +696,7 @@ function updateSleepUI() {
       iconEl.textContent = '😴';
       iconEl.style.animation = 'float 3s ease-in-out infinite';
       durEl.textContent = '—';
-      lblEl.textContent = 'Aucune donnée pour aujourd\'hui';
+      lblEl.textContent = 'Aucune donnee pour aujourd\'hui';
     }
   }
 
@@ -686,7 +749,7 @@ function updateWaterUI() {
   document.getElementById('waterPct').textContent = pctInt + '%';
   document.getElementById('waterGoalDisplay').textContent = waterGoal;
 
-  // Render glasses grid
+  // 1.7 Render glasses grid with star-rating pattern
   const grid = document.getElementById('glassesGrid');
   grid.innerHTML = '';
   const total = Math.max(waterGoal, waterCount);
@@ -694,12 +757,21 @@ function updateWaterUI() {
     const btn = document.createElement('button');
     btn.className = 'glass-btn' + (i < waterCount ? ' filled' : '');
     btn.textContent = i < waterCount ? '🥤' : '🥛';
+    const idx = i;
     btn.addEventListener('click', () => {
-      if (i < waterCount) {
-        // clicking filled glass removes it if it's the last one
-        if (i === waterCount - 1) removeGlass();
-      } else if (i === waterCount) {
-        addGlass();
+      if (idx < waterCount) {
+        // Star-rating: clicking a filled glass unfills it and all after it
+        waterCount = idx;
+        saveTodayVal(WATER_KEY, waterCount);
+        updateWaterUI();
+      } else {
+        // Star-rating: clicking an empty glass fills it and all before it
+        waterCount = idx + 1;
+        saveTodayVal(WATER_KEY, waterCount);
+        updateWaterUI();
+        // Clear reminder
+        document.getElementById('waterReminder').classList.remove('show');
+        resetWaterReminder();
       }
       btn.classList.add('pop');
       setTimeout(() => btn.classList.remove('pop'), 250);
@@ -791,6 +863,30 @@ function updateTopBar() {
   document.getElementById('topWater').textContent = '💧 ' + waterCount;
 }
 
+// ── 1.6 Named sleep motion handler ────────────────────────────────────────────
+function handleSleepMotion(e) {
+  // This is the same logic as in handleMotion for sleep, but named for removal
+  const g = e.accelerationIncludingGravity;
+  if (!g || g.x === null) return;
+  const accel = Math.sqrt(g.x ** 2 + g.y ** 2 + g.z ** 2);
+  const now = Date.now();
+
+  if (sleepMode && !sleepConfirmed) {
+    const delta = Math.abs(accel - lastSleepAccel);
+    if (delta < 0.5) {
+      if (!stillnessStart) stillnessStart = now;
+      if (now - stillnessStart >= 5 * 60 * 1000) {
+        sleepConfirmed = true;
+        saveSleepSession({ active: true, start: sleepStart, confirmed: true });
+        updateSleepUI();
+      }
+    } else {
+      stillnessStart = null;
+    }
+    lastSleepAccel = accel;
+  }
+}
+
 // ── Step counter ───────────────────────────────────────────────────────────────
 function handleMotion(e) {
   const g = e.accelerationIncludingGravity;
@@ -808,6 +904,12 @@ function handleMotion(e) {
     c.classList.remove('step-flash');
     void c.offsetWidth;
     c.classList.add('step-flash');
+
+    // 1.8 Announce milestones to screen readers
+    if (stepCount % 1000 === 0) {
+      const announcer = document.getElementById('stepAnnouncer');
+      if (announcer) announcer.textContent = stepCount + ' pas atteints';
+    }
   }
   lastAccel = accel;
 
@@ -828,6 +930,19 @@ function handleMotion(e) {
   }
 }
 
+// ── 1.4 Persist running state helpers ─────────────────────────────────────────
+function persistRunningState() {
+  try {
+    localStorage.setItem(RUNNING_KEY, isRunning ? 'true' : 'false');
+    localStorage.setItem(ACTIVE_MS_KEY, totalActiveMs.toString());
+    if (activeStart) {
+      localStorage.setItem(ACTIVE_START_KEY, activeStart.toString());
+    } else {
+      localStorage.removeItem(ACTIVE_START_KEY);
+    }
+  } catch(_) {}
+}
+
 async function startSteps() {
   if (typeof DeviceMotionEvent !== 'undefined' &&
       typeof DeviceMotionEvent.requestPermission === 'function' &&
@@ -836,7 +951,7 @@ async function startSteps() {
     return;
   }
   if (typeof DeviceMotionEvent === 'undefined') {
-    alert('Accéléromètre non disponible sur cet appareil.');
+    alert('Accelerometre non disponible sur cet appareil.');
     return;
   }
   isRunning = true;
@@ -844,12 +959,16 @@ async function startSteps() {
   window.addEventListener('devicemotion', handleMotion);
 
   const btn = document.getElementById('btnStart');
-  btn.textContent = 'ARRÊTER';
+  btn.textContent = 'ARRETER';
   btn.style.background = 'linear-gradient(135deg,#ff4444,#cc0000)';
   btn.style.boxShadow = '0 4px 20px rgba(255,68,68,0.3)';
 
+  // 1.1 Update status pill
   const pill = document.getElementById('statusPill');
   if (pill) { pill.classList.add('active'); document.getElementById('statusText').textContent = 'ACTIF'; }
+
+  // 1.4 Persist running state
+  persistRunningState();
 }
 
 function stopSteps() {
@@ -857,9 +976,17 @@ function stopSteps() {
   if (activeStart) { totalActiveMs += Date.now() - activeStart; activeStart = null; }
   window.removeEventListener('devicemotion', handleMotion);
   const btn = document.getElementById('btnStart');
-  btn.textContent = 'DÉMARRER';
+  btn.textContent = 'DEMARRER';
   btn.style.background = '';
   btn.style.boxShadow = '';
+
+  // 1.1 Update status pill
+  const pill = document.getElementById('statusPill');
+  if (pill) { pill.classList.remove('active'); document.getElementById('statusText').textContent = 'INACTIF'; }
+
+  // 1.4 Persist running state
+  persistRunningState();
+
   updateStepsUI();
 }
 
@@ -883,6 +1010,8 @@ function activateSleepMode() {
       !motionGranted) {
     document.getElementById('permOverlay').classList.remove('hidden');
   } else if (typeof DeviceMotionEvent !== 'undefined') {
+    // 1.6 Use named handler for sleep motion
+    window.addEventListener('devicemotion', handleSleepMotion);
     window.addEventListener('devicemotion', handleMotion);
   }
 
@@ -898,13 +1027,17 @@ function deactivateSleepMode() {
 
   // Only save if it looks like real sleep (> 30min, < 16h)
   if (durationMs > 30 * 60 * 1000 && durationMs < 16 * 3600 * 1000) {
-    const date = new Date(sleepStart).toISOString().slice(0, 10);
+    // 1.3 Use WAKE date for attribution, not sleep start date
+    const date = new Date(wakeTime).toISOString().slice(0, 10);
     const h = getHistory(SLEEP_KEY);
     h[date] = parseFloat(durationHours.toFixed(2));
     setHistory(SLEEP_KEY, h);
   }
 
   saveSleepSession({ active: false, start: sleepStart, end: wakeTime, confirmed: sleepConfirmed });
+
+  // 1.6 Remove named sleep motion listener
+  window.removeEventListener('devicemotion', handleSleepMotion);
 
   sleepMode      = false;
   sleepConfirmed = false;
@@ -934,9 +1067,12 @@ document.getElementById('btnPerm').addEventListener('click', async () => {
       document.getElementById('permOverlay').classList.add('hidden');
       // Re-trigger whatever action was pending
       if (document.querySelector('#tab-steps.active')) startSteps();
-      else if (sleepMode) window.addEventListener('devicemotion', handleMotion);
+      else if (sleepMode) {
+        window.addEventListener('devicemotion', handleMotion);
+        window.addEventListener('devicemotion', handleSleepMotion);
+      }
     } else {
-      alert('Permission refusée. Active l\'accès dans Réglages > Safari.');
+      alert('Permission refusee. Active l\'acces dans Reglages > Safari.');
     }
   } catch(err) {
     alert('Erreur : ' + err.message);
@@ -948,9 +1084,13 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const tabId = btn.dataset.tab;
     document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false'); // 1.8
+    });
     document.getElementById('tab-' + tabId).classList.add('active');
     btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true'); // 1.8
     // Refresh history on tab switch
     if (tabId === 'steps') renderStepsHistory();
     if (tabId === 'sleep') renderSleepHistory();
@@ -964,10 +1104,11 @@ document.getElementById('btnStart').addEventListener('click', () => {
 });
 
 document.getElementById('btnReset').addEventListener('click', () => {
-  if (!confirm('Remettre à zéro les pas d\'aujourd\'hui ?')) return;
+  if (!confirm('Remettre a zero les pas d\'aujourd\'hui ?')) return;
   stepCount = 0; totalActiveMs = 0;
   if (activeStart) activeStart = Date.now();
   saveTodayVal(STEPS_KEY, 0);
+  persistRunningState(); // 1.4
   updateStepsUI();
 });
 
@@ -983,11 +1124,13 @@ document.getElementById('btnGoalUp').addEventListener('click', () => {
   updateStepsUI();
 });
 
+// 1.2 Sensitivity chips — persist threshold
 document.querySelectorAll('#sensChips .chip').forEach(c => {
   c.addEventListener('click', () => {
     document.querySelectorAll('#sensChips .chip').forEach(x => x.classList.remove('active'));
     c.classList.add('active');
     threshold = parseFloat(c.dataset.thresh);
+    localStorage.setItem(SENS_KEY, threshold); // 1.2 persist
   });
 });
 
@@ -1026,7 +1169,7 @@ document.getElementById('btnCopy').addEventListener('click', async () => {
   };
   const ok = await copy(code);
   if (ok) {
-    btn.textContent = '✅ Code copié !'; btn.classList.add('copied');
+    btn.textContent = '✅ Code copie !'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = '📋 Copier le code de sync'; btn.classList.remove('copied'); }, 2500);
   }
 });
@@ -1039,9 +1182,36 @@ function checkMidnightReset() {
     // New day — water resets (steps/sleep save historically, so no reset needed)
     waterCount = 0;
     saveTodayVal(WATER_KEY, 0);
+    // Also reset step count for the new day display
+    stepCount = todayVal(STEPS_KEY);
+    updateStepsUI();
+    updateWaterUI();
+    updateSleepUI();
   }
   localStorage.setItem('st_last_date', today);
 }
+
+// 1.5 Robust midnight reset — visibilitychange listener
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    checkMidnightReset();
+  }
+});
+
+// 1.5 Robust midnight reset — interval every 60 seconds
+setInterval(() => {
+  checkMidnightReset();
+}, 60000);
+
+// 1.4 beforeunload warning if isRunning
+window.addEventListener('beforeunload', (e) => {
+  // Persist state before leaving
+  persistRunningState();
+  if (isRunning) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 // ── Service worker ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
