@@ -261,6 +261,31 @@
     /* ── 1.9 Hidden utility ── */
     .hidden { display: none !important; }
 
+    /* ── Sprint 1: Toast notifications (fix #3) ── */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-card);
+      border: 1px solid rgba(255,200,61,0.4);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 14px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
     /* ── 1.10 Accessibility ── */
     .sr-only {
       position: absolute;
@@ -277,6 +302,19 @@
       outline: 2px solid var(--gold);
       outline-offset: 2px;
     }
+
+    /* ── Sprint 1: Minimum font size 0.75rem (fix #9) ── */
+    .summary-chip { font-size: max(0.75rem, 0.7rem); }
+    .nav-label { font-size: max(0.75rem, 0.62rem); }
+    .step-label { font-size: max(0.75rem, 0.62rem); }
+    .step-goal-sub { font-size: max(0.75rem, 0.7rem); }
+    .stat-name { font-size: max(0.75rem, 0.58rem); }
+    .hday { font-size: max(0.75rem, 0.52rem); }
+    .hval { font-size: max(0.75rem, 0.5rem); }
+    .sleep-stage-label { font-size: max(0.75rem, 0.58rem); }
+    .sleep-time-label { font-size: max(0.75rem, 0.62rem); }
+    .sync-code-box { font-size: max(0.75rem, 0.6rem); }
+    footer { font-size: max(0.75rem, 0.65rem); }
   </style>
 </head>
 <body>
@@ -304,11 +342,14 @@
 <!-- 1.8 Screen reader announcer -->
 <div aria-live="polite" id="stepAnnouncer" class="sr-only"></div>
 
+<!-- Sprint 1: Toast element (fix #3) -->
+<div class="toast" id="toast" aria-live="assertive"></div>
+
 <!-- Tab pages -->
 <div class="tabs">
 
   <!-- ── PAS TAB ── -->
-  <div class="tab-page active" id="tab-steps">
+  <div class="tab-page active" id="tab-steps" role="tabpanel" aria-labelledby="nav-steps">
 
     <div class="ring-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10000" aria-label="Progression pas quotidiens" id="ringWrap">
       <svg class="ring-svg" viewBox="0 0 100 100">
@@ -383,7 +424,7 @@
   </div>
 
   <!-- ── SOMMEIL TAB ── -->
-  <div class="tab-page" id="tab-sleep">
+  <div class="tab-page" id="tab-sleep" role="tabpanel" aria-labelledby="nav-sleep">
 
     <div class="sleep-status-card" id="sleepStatusCard">
       <div class="sleep-icon" id="sleepIcon">😴</div>
@@ -435,7 +476,7 @@
   </div>
 
   <!-- ── EAU TAB ── -->
-  <div class="tab-page" id="tab-water">
+  <div class="tab-page" id="tab-water" role="tabpanel" aria-labelledby="nav-water">
 
     <div class="card" style="text-align:center;padding:20px 18px">
       <div class="water-ml" id="waterMlDisp">0 ml</div>
@@ -479,15 +520,15 @@
 
 <!-- Bottom nav — 1.8 ARIA attributes -->
 <nav class="bottom-nav" role="tablist" aria-label="Navigation principale">
-  <button class="nav-btn active" data-tab="steps" id="nav-steps" role="tab" aria-selected="true" aria-label="Pas">
+  <button class="nav-btn active" data-tab="steps" id="nav-steps" role="tab" aria-selected="true" aria-controls="tab-steps" aria-label="Pas">
     <span class="nav-icon">🚶</span>
     <span class="nav-label">Pas</span>
   </button>
-  <button class="nav-btn" data-tab="sleep" id="nav-sleep" role="tab" aria-selected="false" aria-label="Sommeil">
+  <button class="nav-btn" data-tab="sleep" id="nav-sleep" role="tab" aria-selected="false" aria-controls="tab-sleep" aria-label="Sommeil">
     <span class="nav-icon">😴</span>
     <span class="nav-label">Sommeil</span>
   </button>
-  <button class="nav-btn" data-tab="water" id="nav-water" role="tab" aria-selected="false" aria-label="Eau">
+  <button class="nav-btn" data-tab="water" id="nav-water" role="tab" aria-selected="false" aria-controls="tab-water" aria-label="Eau">
     <span class="nav-icon">💧</span>
     <span class="nav-label">Eau</span>
   </button>
@@ -507,8 +548,38 @@ const RUNNING_KEY = 'st_running';   // 1.4
 const ACTIVE_MS_KEY = 'st_active_ms'; // 1.4
 const ACTIVE_START_KEY = 'st_active_start'; // 1.4
 
-function todayIso() { return new Date().toISOString().slice(0, 10); }
+// ── Sprint 1: Named constants (fix #2) ───────────────────────────────────────
+const STEP_TO_KM       = 0.00075;   // km per step
+const STEP_TO_KCAL     = 0.04;      // kcal per step
+const RING_CIRCUMFERENCE = 276.46;
+const GLASS_ML         = 250;       // ml per glass
+const SLEEP_CONFIRM_MS = 5 * 60 * 1000;  // 5 min stillness
+const STILLNESS_THRESH = 0.5;       // accelerometer delta
+const STEP_DEBOUNCE_MS = 300;       // min ms between steps
+const WATER_REMINDER_MS = 2 * 60 * 60 * 1000; // 2 hours
+const MAX_STEPS        = 999999;    // safety limit
+const MAX_WATER        = 50;        // safety limit
+const MIN_SLEEP_MS     = 30 * 60 * 1000;   // 30 min
+const MAX_SLEEP_MS     = 16 * 3600 * 1000; // 16 hours
+const SLEEP_PERFECT_H  = 8;        // perfect sleep hours
+const LAST_DRINK_KEY   = 'st_last_drink'; // fix #6
+
+function todayIso() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function fmtNum(n) { return n.toLocaleString('fr-FR'); }
+
+// Sprint 1: Toast notification helper (fix #3)
+let _toastTimer = null;
+function showToast(msg, durationMs = 2500) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), durationMs);
+}
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let stepCount     = 0;
@@ -615,7 +686,13 @@ function syncToFitness() {
 
 
 // ── UI: Steps ─────────────────────────────────────────────────────────────────
+// Sprint 1: debounce with rAF (fix #5)
+let _stepsRafId = null;
 function updateStepsUI() {
+  if (_stepsRafId) return;
+  _stepsRafId = requestAnimationFrame(() => { _stepsRafId = null; _updateStepsUIImmediate(); });
+}
+function _updateStepsUIImmediate() {
   const pct = Math.min(1, stepCount / dailyGoal);
   const pctInt = Math.round(pct * 100);
 
@@ -625,12 +702,11 @@ function updateStepsUI() {
   void el.offsetWidth;
   el.classList.add('bump');
 
-  const circumference = 276.46;
-  document.getElementById('ringFill').style.strokeDashoffset = (circumference * (1 - pct)).toFixed(2);
+  document.getElementById('ringFill').style.strokeDashoffset = (RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
   document.getElementById('progressFill').style.width = pctInt + '%';
   document.getElementById('progressPct').textContent = pctInt + '%';
-  document.getElementById('distDisp').textContent = (stepCount * 0.00075).toFixed(2);
-  document.getElementById('calDisp').textContent = Math.round(stepCount * 0.04);
+  document.getElementById('distDisp').textContent = (stepCount * STEP_TO_KM).toFixed(2);
+  document.getElementById('calDisp').textContent = Math.round(stepCount * STEP_TO_KCAL);
 
   let ams = totalActiveMs;
   if (isRunning && activeStart) ams += Date.now() - activeStart;
@@ -732,12 +808,12 @@ function updateSleepUI() {
   document.getElementById('sleepNights').textContent = nights;
   if (todaySleep > 0) {
     document.getElementById('sleepTotal').textContent = todaySleep.toFixed(1) + 'h';
-    const score = Math.min(100, Math.round((todaySleep / 8) * 100));
+    const score = Math.min(100, Math.round((todaySleep / SLEEP_PERFECT_H) * 100));
     document.getElementById('sleepScore').textContent = score + '%';
   } else {
     const lastNight = vals.length > 0 ? vals[vals.length - 1] : 0;
     document.getElementById('sleepTotal').textContent = lastNight > 0 ? lastNight.toFixed(1) + 'h' : '—';
-    document.getElementById('sleepScore').textContent = lastNight > 0 ? Math.min(100, Math.round((lastNight / 8) * 100)) + '%' : '—';
+    document.getElementById('sleepScore').textContent = lastNight > 0 ? Math.min(100, Math.round((lastNight / SLEEP_PERFECT_H) * 100)) + '%' : '—';
   }
 
   updateTopBar();
@@ -756,7 +832,7 @@ function renderSleepHistory() {
 function updateWaterUI() {
   const pct = Math.min(1, waterCount / waterGoal);
   const pctInt = Math.round(pct * 100);
-  const ml = waterCount * 250;
+  const ml = waterCount * GLASS_ML;
 
   document.getElementById('waterMlDisp').textContent = ml >= 1000
     ? (ml / 1000).toFixed(1) + ' L'
@@ -806,6 +882,7 @@ function renderWaterHistory() {
 }
 
 function addGlass() {
+  if (waterCount >= MAX_WATER) { showToast('Limite atteinte : ' + MAX_WATER + ' verres max'); return; } // fix #4
   waterCount++;
   saveTodayVal(WATER_KEY, waterCount);
   updateWaterUI();
@@ -892,9 +969,9 @@ function handleSleepMotion(e) {
 
   if (sleepMode && !sleepConfirmed) {
     const delta = Math.abs(accel - lastSleepAccel);
-    if (delta < 0.5) {
+    if (delta < STILLNESS_THRESH) {
       if (!stillnessStart) stillnessStart = now;
-      if (now - stillnessStart >= 5 * 60 * 1000) {
+      if (now - stillnessStart >= SLEEP_CONFIRM_MS) {
         sleepConfirmed = true;
         saveSleepSession({ active: true, start: sleepStart, confirmed: true });
         updateSleepUI();
@@ -914,7 +991,8 @@ function handleMotion(e) {
   const now = Date.now();
 
   // Step detection
-  if (isRunning && accel > threshold && lastAccel <= threshold && (now - lastStepTime) > 300) {
+  if (isRunning && accel > threshold && lastAccel <= threshold && (now - lastStepTime) > STEP_DEBOUNCE_MS) {
+    if (stepCount >= MAX_STEPS) { lastAccel = accel; return; } // fix #4 safety limit
     stepCount++;
     lastStepTime = now;
     saveTodayVal(STEPS_KEY, stepCount);
@@ -935,9 +1013,9 @@ function handleMotion(e) {
   // Sleep stillness detection
   if (sleepMode && !sleepConfirmed) {
     const delta = Math.abs(accel - lastSleepAccel);
-    if (delta < 0.5) {
+    if (delta < STILLNESS_THRESH) {
       if (!stillnessStart) stillnessStart = now;
-      if (now - stillnessStart >= 5 * 60 * 1000) {
+      if (now - stillnessStart >= SLEEP_CONFIRM_MS) {
         sleepConfirmed = true;
         saveSleepSession({ active: true, start: sleepStart, confirmed: true });
         updateSleepUI();
@@ -1045,7 +1123,7 @@ function deactivateSleepMode() {
   const durationHours = durationMs / 3600000;
 
   // Only save if it looks like real sleep (> 30min, < 16h)
-  if (durationMs > 30 * 60 * 1000 && durationMs < 16 * 3600 * 1000) {
+  if (durationMs > MIN_SLEEP_MS && durationMs < MAX_SLEEP_MS) {
     // 1.3 Use WAKE date for attribution, not sleep start date
     const date = new Date(wakeTime).toISOString().slice(0, 10);
     const h = getHistory(SLEEP_KEY);
@@ -1066,16 +1144,22 @@ function deactivateSleepMode() {
   syncToFitness();
 }
 
-// ── Water reminders ───────────────────────────────────────────────────────────
+// ── Water reminders (fix #6: save last drink time) ───────────────────────────
 function resetWaterReminder() {
+  // Save last drink timestamp
+  try { localStorage.setItem(LAST_DRINK_KEY, Date.now().toString()); } catch(_) {}
   if (waterReminderInterval) clearInterval(waterReminderInterval);
   waterReminderInterval = setInterval(() => {
     if (waterCount < waterGoal) {
-      const el = document.getElementById('waterReminder');
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 8000);
+      const lastDrink = parseInt(localStorage.getItem(LAST_DRINK_KEY) || '0', 10);
+      const elapsed = Date.now() - lastDrink;
+      if (elapsed >= WATER_REMINDER_MS) {
+        const el = document.getElementById('waterReminder');
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 8000);
+      }
     }
-  }, 2 * 60 * 60 * 1000); // every 2 hours
+  }, WATER_REMINDER_MS);
 }
 
 // ── iOS permission ────────────────────────────────────────────────────────────
