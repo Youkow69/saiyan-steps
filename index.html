@@ -598,6 +598,22 @@ function generateSyncCode() {
   return btoa(JSON.stringify(data));
 }
 
+// ── Cross-app sync to saiyan-fitness ──────────────────────────────────────────
+function syncToFitness() {
+  try {
+    const sleepHistory = getHistory(SLEEP_KEY);
+    const sleepHours = sleepHistory[todayIso()] || 0;
+    localStorage.setItem('saiyan_tracker_sync', JSON.stringify({
+      steps: stepCount,
+      sleepHours: sleepHours,
+      waterGlasses: waterCount,
+      date: todayIso(),
+      timestamp: Date.now()
+    }));
+  } catch(e) {}
+}
+
+
 // ── UI: Steps ─────────────────────────────────────────────────────────────────
 function updateStepsUI() {
   const pct = Math.min(1, stepCount / dailyGoal);
@@ -634,6 +650,7 @@ function updateStepsUI() {
 
   updateTopBar();
   renderStepsHistory();
+  syncToFitness();
 }
 
 function renderStepsHistory() {
@@ -795,6 +812,7 @@ function addGlass() {
   // Clear reminder
   document.getElementById('waterReminder').classList.remove('show');
   resetWaterReminder();
+  syncToFitness();
 }
 
 function removeGlass() {
@@ -802,6 +820,7 @@ function removeGlass() {
   waterCount--;
   saveTodayVal(WATER_KEY, waterCount);
   updateWaterUI();
+  syncToFitness();
 }
 
 // ── Generic history renderer ───────────────────────────────────────────────────
@@ -1044,6 +1063,7 @@ function deactivateSleepMode() {
   sleepStart     = null;
 
   updateSleepUI();
+  syncToFitness();
 }
 
 // ── Water reminders ───────────────────────────────────────────────────────────
