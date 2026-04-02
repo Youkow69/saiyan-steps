@@ -720,7 +720,23 @@ footer { font-size: max(0.75rem, 0.65rem); }
 }
 
 /* FEAT-S14: Light theme overrides */
-.light-theme .ring-bg { stroke: rgba(0,0,0,0.06); }
+.light-theme {
+  --bg: #FFF8F0;
+  --text: #1A1A1A;
+  --text-secondary: #555;
+  --card-bg: #FFFFFF;
+  --border: #E0D5C8;
+  --accent: #FF8C00;
+  --accent-secondary: #FFD700;
+  --ring-bg: rgba(0,0,0,0.08);
+}
+.light-theme body { background: #FFF8F0; color: #1A1A1A; }
+.light-theme .card { background: #FFFFFF; border-color: #E0D5C8; }
+.light-theme .bottom-nav { background: #FFFFFF; border-top: 1px solid #E0D5C8; }
+.light-theme .bottom-nav button { color: #888; }
+.light-theme .bottom-nav button.active { color: #FF8C00; }
+.light-theme .top-bar { background: #FFF8F0; border-bottom: 1px solid #E0D5C8; }
+.light-theme .toast { background: #1A1A1A; color: #FFF8F0; }
 .light-theme .cal-ring-bg { stroke: rgba(0,0,0,0.06); }
 .light-theme .btn-ki {
   color: #fff;
