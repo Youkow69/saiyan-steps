@@ -316,6 +316,10 @@ async function generateSyncCode() {
 }
 
 function syncToFitness() {
+  // Also sync to Supabase cloud if logged in
+  if (typeof cloudSyncSteps === 'function') {
+    try { cloudSyncSteps(); } catch(e) {}
+  }
   const sleepHistory = getHistory(SLEEP_KEY);
   const sleepHours = sleepHistory[todayIso()] || 0;
   safeSet('saiyan_tracker_sync', JSON.stringify({
