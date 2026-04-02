@@ -33,6 +33,7 @@ const DIST_GOAL_KEY    = 'st_dist_goal';
 const DIST_MODE_KEY    = 'st_dist_mode';
 const WEEKLY_SHOWN_KEY = 'st_weekly_shown';
 const BADGES_KEY       = 'st_badges';
+const CHALLENGES_KEY   = 'st_challenges';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -1558,6 +1559,204 @@ function renderBadges(unlocked) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22e: Solo Challenges (DBZ Theme)
+// ═══════════════════════════════════════════════════════════════════════════
+
+var CHALLENGE_DEFS = [
+  {
+    id: 'goku_training',
+    name: 'Entrainement de Goku',
+    desc: '15 000 pas/jour pendant 7 jours',
+    icon: '\u{1F4AA}',
+    duration: 7,
+    check: function(dayData) { return dayData.steps >= 15000; }
+  },
+  {
+    id: 'gravity_x10',
+    name: 'Gravite x10',
+    desc: 'Double ton objectif pendant 3 jours',
+    icon: '\u{1F30D}',
+    duration: 3,
+    check: function(dayData) { return dayData.steps >= dailyGoal * 2; }
+  },
+  {
+    id: 'snake_way',
+    name: 'Course Snake Way',
+    desc: '100 000 pas en 7 jours',
+    icon: '\u{1F40D}',
+    duration: 7,
+    check: null,
+    checkTotal: function(totalSteps) { return totalSteps >= 100000; }
+  },
+  {
+    id: 'whis_training',
+    name: 'Entrainement de Whis',
+    desc: 'Objectif + 8 verres + 7h sommeil x5j',
+    icon: '\u{1F47C}',
+    duration: 5,
+    check: function(dayData) {
+      return dayData.steps >= dailyGoal && dayData.water >= 8 && dayData.sleep >= 7;
+    }
+  }
+];
+
+function getChallenges() {
+  try { return JSON.parse(safeGet(CHALLENGES_KEY, '{}')); }
+  catch(e) { return {}; }
+}
+
+function saveChallenges(data) {
+  safeSet(CHALLENGES_KEY, JSON.stringify(data));
+}
+
+function startChallenge(id) {
+  var challenges = getChallenges();
+  if (challenges[id] && challenges[id].completed) {
+    showToast('Ce challenge est deja complete !');
+    return;
+  }
+  challenges[id] = {
+    startDate: todayIso(),
+    daysCompleted: 0,
+    totalSteps: 0,
+    completed: false,
+    lastCheckedDate: ''
+  };
+  saveChallenges(challenges);
+  showToast('Challenge demarre !', 2000);
+  renderChallenges();
+}
+
+function updateChallenges() {
+  var challenges = getChallenges();
+  var today = todayIso();
+  var stepsH = getHistory(STEPS_KEY);
+  var waterH = getHistory(WATER_KEY);
+  var sleepH = getHistory(SLEEP_KEY);
+  var changed = false;
+
+  CHALLENGE_DEFS.forEach(function(def) {
+    var ch = challenges[def.id];
+    if (!ch || ch.completed) return;
+    if (ch.lastCheckedDate === today) return;
+
+    // Check if challenge expired (beyond duration + 1 day buffer)
+    var startD = new Date(ch.startDate + 'T12:00:00');
+    var now = new Date();
+    var daysSinceStart = Math.floor((now - startD) / 86400000);
+
+    if (def.checkTotal) {
+      // Cumulative challenge
+      var total = 0;
+      for (var i = 0; i <= daysSinceStart && i < def.duration; i++) {
+        var d = new Date(startD);
+        d.setDate(d.getDate() + i);
+        var iso = dateToIso(d);
+        total += stepsH[iso] || 0;
+      }
+      ch.totalSteps = total;
+      if (def.checkTotal(total)) {
+        ch.completed = true;
+        ch.daysCompleted = def.duration;
+        showToast(def.icon + ' Challenge ' + def.name + ' complete !', 4000);
+        sendNotif('Challenge complete !', def.icon + ' ' + def.name);
+        changed = true;
+      } else if (daysSinceStart >= def.duration) {
+        // Failed
+        delete challenges[def.id];
+        changed = true;
+      }
+    } else {
+      // Daily challenge - check yesterday or today
+      var yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      var yIso = dateToIso(yesterday);
+
+      // Check each unchecked day
+      for (var j = 0; j <= daysSinceStart && j < def.duration; j++) {
+        var dd = new Date(startD);
+        dd.setDate(dd.getDate() + j);
+        var dayIso = dateToIso(dd);
+        if (dayIso >= today) continue; // Don't check today yet (not over)
+
+        var dayData = {
+          steps: stepsH[dayIso] || 0,
+          water: waterH[dayIso] || 0,
+          sleep: sleepH[dayIso] || 0
+        };
+
+        if (def.check(dayData)) {
+          // Only count if not already counted
+          ch.daysCompleted = Math.min(def.duration, ch.daysCompleted + 1);
+        }
+      }
+
+      ch.lastCheckedDate = today;
+      changed = true;
+
+      if (ch.daysCompleted >= def.duration) {
+        ch.completed = true;
+        showToast(def.icon + ' Challenge ' + def.name + ' complete !', 4000);
+        sendNotif('Challenge complete !', def.icon + ' ' + def.name);
+      } else if (daysSinceStart > def.duration + 1) {
+        // Expired - remove
+        delete challenges[def.id];
+      }
+    }
+  });
+
+  if (changed) saveChallenges(challenges);
+  renderChallenges();
+}
+
+function renderChallenges() {
+  var container = document.getElementById('challengesGrid');
+  if (!container) return;
+  container.innerHTML = '';
+  var challenges = getChallenges();
+
+  CHALLENGE_DEFS.forEach(function(def) {
+    var ch = challenges[def.id];
+    var el = document.createElement('div');
+    el.className = 'challenge-card' + (ch && ch.completed ? ' completed' : '');
+
+    var progressHtml = '';
+    if (ch && !ch.completed) {
+      if (def.checkTotal) {
+        var pct = Math.min(100, Math.round((ch.totalSteps / 100000) * 100));
+        progressHtml = '<div class="challenge-progress"><div class="challenge-progress-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="challenge-progress-text">' + fmtNum(ch.totalSteps) + ' / 100 000</div>';
+      } else {
+        progressHtml = '<div class="challenge-progress"><div class="challenge-progress-fill" style="width:' + Math.round((ch.daysCompleted / def.duration) * 100) + '%"></div></div>' +
+          '<div class="challenge-progress-text">' + ch.daysCompleted + ' / ' + def.duration + ' jours</div>';
+      }
+    } else if (ch && ch.completed) {
+      progressHtml = '<div class="challenge-badge-done">\u2705 Complete</div>';
+    }
+
+    var btnHtml = '';
+    if (!ch) {
+      btnHtml = '<button class="btn-challenge-start" data-challenge="' + def.id + '">LANCER</button>';
+    }
+
+    el.innerHTML = '<div class="challenge-icon">' + def.icon + '</div>' +
+      '<div class="challenge-name">' + def.name + '</div>' +
+      '<div class="challenge-desc">' + def.desc + '</div>' +
+      progressHtml + btnHtml;
+
+    container.appendChild(el);
+  });
+
+  // Add click listeners to start buttons
+  container.querySelectorAll('.btn-challenge-start').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      startChallenge(btn.dataset.challenge);
+    });
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1745,6 +1944,7 @@ document.addEventListener('visibilitychange', function() {
     checkMidnightReset();
     startIntervals();
 checkBadges();
+updateChallenges();
 setTimeout(checkWeeklySummary, 1500);
   }
 });
@@ -1783,4 +1983,5 @@ setupHistoryToggles();
 applyCompactMode();
 startIntervals();
 checkBadges();
+updateChallenges();
 setTimeout(checkWeeklySummary, 1500);
