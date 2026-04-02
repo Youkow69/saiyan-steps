@@ -27,11 +27,14 @@ const ACTIVE_DATE_KEY  = 'st_active_date';
 const HISTORY_MODE_KEY = 'st_history_mode';
 const BEST_DAY_KEY     = 'st_best_day';
 const COMPACT_KEY      = 'st_compact';
+const CAL_GOAL_KEY     = 'st_cal_goal';
+const WEIGHT_KEY       = 'st_weight';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
 const STEP_TO_KCAL       = 0.04;
 const RING_CIRCUMFERENCE = 276.46;
+const CAL_RING_CIRCUMFERENCE = 207.35; // r=33, 2*pi*33
 const GLASS_ML           = 250;
 const SLEEP_CONFIRM_MS   = 5 * 60 * 1000;     // 5 min stillness
 const STILLNESS_THRESH   = 0.5;
@@ -186,6 +189,8 @@ let activeInterval = null;
 // FIX 10: History mode (7 or 30 days)
 let historyDays = parseInt(safeGet(HISTORY_MODE_KEY, '7'), 10);
 let compactMode = safeGet(COMPACT_KEY, 'false') === 'true';
+let calGoal = parseInt(safeGet(CAL_GOAL_KEY, '300'), 10);
+let userWeight = parseInt(safeGet(WEIGHT_KEY, '70'), 10);
 
 // FIX 12: Notification tracking
 let goalNotifSent = false;
@@ -392,6 +397,40 @@ function showConfetti() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 7c: Calorie Burn Goal
+// ═══════════════════════════════════════════════════════════════════════════
+
+function calculateCalories() {
+  // Calories = steps * weight factor + active duration factor
+  var stepCal = stepCount * (userWeight * 0.00057);
+  var ams = totalActiveMs;
+  if (isRunning && activeStart) ams += Date.now() - activeStart;
+  var activeMinutes = ams / 60000;
+  var activeCal = activeMinutes * (userWeight * 0.05);
+  return Math.round(stepCal + activeCal);
+}
+
+function updateCalorieRing() {
+  var cal = calculateCalories();
+  var pct = Math.min(1, cal / calGoal);
+  var ringEl = document.getElementById('calRingFill');
+  var textEl = document.getElementById('calRingText');
+  var goalEl = document.getElementById('calGoalDisp');
+  if (ringEl) {
+    ringEl.style.strokeDashoffset = (CAL_RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
+  }
+  if (textEl) {
+    textEl.textContent = cal + ' kcal';
+  }
+  if (goalEl) {
+    goalEl.textContent = '/ ' + calGoal + ' kcal';
+  }
+  // Also update the main calorie display
+  document.getElementById('calDisp').textContent = cal;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 8: Sync Code & Cross-app Sync (FIX 8: real SHA-256)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -463,7 +502,7 @@ function _updateStepsUIImmediate(isNewStep) {
   document.getElementById('progressFill').style.width = pctInt + '%';
   document.getElementById('progressPct').textContent = pctInt + '%';
   document.getElementById('distDisp').textContent = (stepCount * STEP_TO_KM).toFixed(2);
-  document.getElementById('calDisp').textContent = Math.round(stepCount * STEP_TO_KCAL);
+  document.getElementById('calDisp').textContent = calculateCalories();
 
   let ams = totalActiveMs;
   if (isRunning && activeStart) ams += Date.now() - activeStart;
@@ -490,6 +529,7 @@ function _updateStepsUIImmediate(isNewStep) {
   updateStreak();
   updateTransformationUI();
   checkAndUpdateBestDay();
+  updateCalorieRing();
   syncToFitness();
 
   // FIX 12: Goal reached notification
@@ -1304,6 +1344,32 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
   });
 });
 
+// Calorie goal controls
+document.getElementById('btnCalGoalDown').addEventListener('click', function() {
+  calGoal = Math.max(100, calGoal - 50);
+  safeSet(CAL_GOAL_KEY, calGoal.toString());
+  updateCalorieRing();
+});
+document.getElementById('btnCalGoalUp').addEventListener('click', function() {
+  calGoal = Math.min(2000, calGoal + 50);
+  safeSet(CAL_GOAL_KEY, calGoal.toString());
+  updateCalorieRing();
+});
+document.getElementById('btnWeightDown').addEventListener('click', function() {
+  userWeight = Math.max(30, userWeight - 1);
+  safeSet(WEIGHT_KEY, userWeight.toString());
+  document.getElementById('weightDisplay').textContent = userWeight + ' kg';
+  updateCalorieRing();
+  updateStepsUI();
+});
+document.getElementById('btnWeightUp').addEventListener('click', function() {
+  userWeight = Math.min(200, userWeight + 1);
+  safeSet(WEIGHT_KEY, userWeight.toString());
+  document.getElementById('weightDisplay').textContent = userWeight + ' kg';
+  updateCalorieRing();
+  updateStepsUI();
+});
+
 // Compact mode toggle
 document.getElementById('btnCompact').addEventListener('click', toggleCompactMode);
 
@@ -1433,6 +1499,8 @@ updateWaterUI();
 updateTransformationUI();
 resetWaterReminder();
 checkAndUpdateBestDay();
+updateCalorieRing();
+if (document.getElementById('weightDisplay')) document.getElementById('weightDisplay').textContent = userWeight + ' kg';
 renderHourlyChart();
 setupHistoryToggles();
 applyCompactMode();
