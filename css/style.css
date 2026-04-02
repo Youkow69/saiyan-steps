@@ -956,3 +956,120 @@ footer { font-size: max(0.75rem, 0.65rem); }
   0% { transform: translateY(0) scale(1); opacity: 1; }
   100% { transform: translateY(-100vh) scale(0); opacity: 0; }
 }
+
+
+/* ── FEAT-S2: Golden flash animation on badge unlock ── */
+@keyframes goldenFlash {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,215,0,0); }
+  25% { transform: scale(1.15); box-shadow: 0 0 30px rgba(255,215,0,0.8); }
+  50% { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,215,0,0); }
+}
+
+.badge-card.unlocked.just-unlocked {
+  animation: goldenFlash 0.8s ease-out;
+}
+
+.badge-card.unlocked {
+  border-color: var(--gold);
+  background: rgba(255,215,0,0.08);
+}
+
+.badge-card .badge-icon {
+  font-size: 1.6rem;
+}
+
+/* ── FEAT-S1: Challenge card enhancements ── */
+.challenge-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.challenge-card.completed {
+  border-color: var(--green);
+  background: rgba(57,255,20,0.06);
+}
+
+.challenge-card.completed::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 30px; height: 30px;
+  background: var(--green);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+/* ── FEAT-S3: Best day display enhanced ── */
+.best-day-display {
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: var(--gold);
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  background: rgba(255,215,0,0.08);
+  border-radius: 10px;
+  border: 1px solid rgba(255,215,0,0.15);
+}
+
+/* ── FEAT-S4: Weekly reports container ── */
+.weekly-report-item {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.weekly-report-item:hover {
+  background: rgba(255,215,0,0.08);
+}
+.weekly-report-item strong {
+  color: var(--gold);
+}
+
+/* ── FEAT-S5: Chart tooltip ── */
+.chart-tooltip {
+  position: absolute;
+  background: rgba(20,20,30,0.95);
+  color: var(--gold);
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* ── FEAT-S5: Y-axis enhancements ── */
+.chart-y-axis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 36px;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.5rem;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 4px;
+}
+
+/* ── FEAT-S6: Calorie ring display text ── */
+.cal-ring-label {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* ── FEAT-S8: Settings field improvements ── */
+.settings-field label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: block;
+}
+
