@@ -531,3 +531,26 @@ footer { font-size: max(0.75rem, 0.65rem); }
   font-size: 0.7rem;
   color: var(--muted);
 }
+
+
+/* ── Weekly Summary ── */
+.weekly-stat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px 6px;
+}
+.weekly-stat-val {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gold);
+}
+.weekly-stat-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-top: 2px;
+}
