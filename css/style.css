@@ -425,3 +425,18 @@ footer {
 .sleep-time-label { font-size: max(0.75rem, 0.62rem); }
 .sync-code-box { font-size: max(0.75rem, 0.6rem); }
 footer { font-size: max(0.75rem, 0.65rem); }
+
+
+/* ── Best Day Record ── */
+.best-day-display {
+  text-align: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  padding: 8px 14px;
+  background: rgba(255,200,61,0.06);
+  border: 1px solid rgba(255,200,61,0.15);
+  border-radius: 12px;
+}
+.best-day-display.hidden { display: none; }
