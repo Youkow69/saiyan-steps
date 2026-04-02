@@ -32,6 +32,7 @@ const WEIGHT_KEY       = 'st_weight';
 const DIST_GOAL_KEY    = 'st_dist_goal';
 const DIST_MODE_KEY    = 'st_dist_mode';
 const WEEKLY_SHOWN_KEY = 'st_weekly_shown';
+const BADGES_KEY       = 'st_badges';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -587,6 +588,7 @@ function _updateStepsUIImmediate(isNewStep) {
   checkAndUpdateBestDay();
   updateCalorieRing();
   updateDistanceGoal();
+  checkBadges();
   syncToFitness();
 
   // FIX 12: Goal reached notification
@@ -1470,6 +1472,92 @@ function checkWeeklySummary() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22d: Badges / Achievements System
+// ═══════════════════════════════════════════════════════════════════════════
+
+var BADGE_DEFS = [
+  { id: 'premier_pas', name: 'Premier pas', desc: 'Faire ton premier pas', icon: '\u{1F463}', check: function() { return getTotalAllTimeSteps() >= 1; } },
+  { id: 'club_10k', name: '10K Club', desc: '10 000 pas en un jour', icon: '\u{1F3C6}', check: function() {
+    var h = getHistory(STEPS_KEY);
+    return Object.values(h).some(function(v) { return v >= 10000; });
+  }},
+  { id: 'marathon', name: 'Marathon', desc: '42 195 pas en un jour', icon: '\u{1F3C3}', check: function() {
+    var h = getHistory(STEPS_KEY);
+    return Object.values(h).some(function(v) { return v >= 42195; });
+  }},
+  { id: 'semaine_parfaite', name: 'Semaine parfaite', desc: '7 jours consecutifs a l\'objectif', icon: '\u2B50', check: function() {
+    var h = getHistory(STEPS_KEY);
+    var streak2 = 0;
+    var d = new Date();
+    for (var i = 0; i < 365; i++) {
+      var iso = dateToIso(d);
+      if ((h[iso] || 0) >= dailyGoal) {
+        streak2++;
+        if (streak2 >= 7) return true;
+      } else {
+        streak2 = 0;
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    return false;
+  }},
+  { id: 'hydrate', name: 'Hydrate', desc: '30 jours avec 8+ verres', icon: '\u{1F4A7}', check: function() {
+    var h = getHistory(WATER_KEY);
+    var count3 = 0;
+    Object.values(h).forEach(function(v) { if (v >= 8) count3++; });
+    return count3 >= 30;
+  }},
+  { id: 'dormeur_elite', name: 'Dormeur d\'elite', desc: '14 jours avec 7h+ de sommeil', icon: '\u{1F31F}', check: function() {
+    var h = getHistory(SLEEP_KEY);
+    var count4 = 0;
+    Object.values(h).forEach(function(v) { if (v >= 7) count4++; });
+    return count4 >= 14;
+  }},
+  { id: 'super_saiyan_steps', name: 'Super Saiyan Steps', desc: '1 000 000 pas cumules', icon: '\u{1F525}', check: function() { return getTotalAllTimeSteps() >= 1000000; } }
+];
+
+function getUnlockedBadges() {
+  try { return JSON.parse(safeGet(BADGES_KEY, '[]')); }
+  catch(e) { return []; }
+}
+
+function checkBadges() {
+  var unlocked = getUnlockedBadges();
+  var changed = false;
+
+  BADGE_DEFS.forEach(function(badge) {
+    if (unlocked.indexOf(badge.id) === -1 && badge.check()) {
+      unlocked.push(badge.id);
+      changed = true;
+      showToast(badge.icon + ' Badge debloque : ' + badge.name + ' !', 4000);
+      sendNotif('Badge debloque !', badge.icon + ' ' + badge.name);
+    }
+  });
+
+  if (changed) {
+    safeSet(BADGES_KEY, JSON.stringify(unlocked));
+  }
+  renderBadges(unlocked);
+}
+
+function renderBadges(unlocked) {
+  var container = document.getElementById('badgesGrid');
+  if (!container) return;
+  container.innerHTML = '';
+
+  BADGE_DEFS.forEach(function(badge) {
+    var isUnlocked = unlocked.indexOf(badge.id) !== -1;
+    var el = document.createElement('div');
+    el.className = 'badge-card' + (isUnlocked ? ' unlocked' : '');
+    el.innerHTML = '<div class="badge-icon">' + (isUnlocked ? badge.icon : '\u{1F512}') + '</div>' +
+      '<div class="badge-name">' + badge.name + '</div>' +
+      '<div class="badge-desc">' + badge.desc + '</div>';
+    container.appendChild(el);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1656,6 +1744,7 @@ document.addEventListener('visibilitychange', function() {
   } else {
     checkMidnightReset();
     startIntervals();
+checkBadges();
 setTimeout(checkWeeklySummary, 1500);
   }
 });
@@ -1693,4 +1782,5 @@ renderHourlyChart();
 setupHistoryToggles();
 applyCompactMode();
 startIntervals();
+checkBadges();
 setTimeout(checkWeeklySummary, 1500);
