@@ -554,3 +554,43 @@ footer { font-size: max(0.75rem, 0.65rem); }
   color: var(--muted);
   margin-top: 2px;
 }
+
+
+/* ── Badges Grid ── */
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.badge-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: 12px 6px;
+  text-align: center;
+  opacity: 0.4;
+  transition: all 0.3s ease;
+}
+.badge-card.unlocked {
+  opacity: 1;
+  border-color: rgba(255,200,61,0.3);
+  background: rgba(255,200,61,0.04);
+}
+.badge-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.badge-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+.badge-desc {
+  font-size: 0.55rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
