@@ -1015,6 +1015,19 @@ function loadAll() {
       sleepMode      = true;
       sleepStart     = sd.start;
       sleepConfirmed = sd.confirmed || false;
+      // BUG-S2 fix: reattach motion listener and restart backup interval on reload
+      if (typeof DeviceMotionEvent !== 'undefined') {
+        window.removeEventListener('devicemotion', handleMotion);
+        window.addEventListener('devicemotion', handleSleepMotion);
+      }
+      sleepCheckInterval = setInterval(function() {
+        if (!sleepConfirmed && stillnessStart && Date.now() - stillnessStart >= SLEEP_CONFIRM_MS) {
+          sleepConfirmed = true;
+          sleepStart = sleepStart || Date.now();
+          saveSleepSession({ active: true, start: sleepStart, confirmed: true });
+          updateSleepUI();
+        }
+      }, 5000);
     }
   } catch (e) { /* ignore */ }
 
