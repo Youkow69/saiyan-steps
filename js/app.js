@@ -29,6 +29,8 @@ const BEST_DAY_KEY     = 'st_best_day';
 const COMPACT_KEY      = 'st_compact';
 const CAL_GOAL_KEY     = 'st_cal_goal';
 const WEIGHT_KEY       = 'st_weight';
+const DIST_GOAL_KEY    = 'st_dist_goal';
+const DIST_MODE_KEY    = 'st_dist_mode';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -191,6 +193,8 @@ let historyDays = parseInt(safeGet(HISTORY_MODE_KEY, '7'), 10);
 let compactMode = safeGet(COMPACT_KEY, 'false') === 'true';
 let calGoal = parseInt(safeGet(CAL_GOAL_KEY, '300'), 10);
 let userWeight = parseInt(safeGet(WEIGHT_KEY, '70'), 10);
+let distGoal = parseFloat(safeGet(DIST_GOAL_KEY, '5'));
+let distanceMode = safeGet(DIST_MODE_KEY, 'false') === 'true';
 
 // FIX 12: Notification tracking
 let goalNotifSent = false;
@@ -431,6 +435,53 @@ function updateCalorieRing() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 7d: Distance Goal
+// ═══════════════════════════════════════════════════════════════════════════
+
+function getCurrentDistance() {
+  return stepCount * STEP_TO_KM;
+}
+
+function updateDistanceGoal() {
+  var dist = getCurrentDistance();
+  var distGoalEl = document.getElementById('distGoalDisplay');
+  var distStatEl = document.getElementById('distMainStat');
+  var distGoalSub = document.getElementById('distGoalSub');
+  if (distGoalEl) distGoalEl.textContent = distGoal.toFixed(1) + ' km';
+  if (distStatEl) distStatEl.textContent = dist.toFixed(2) + ' km';
+  if (distGoalSub) distGoalSub.textContent = '/ ' + distGoal.toFixed(1) + ' km';
+}
+
+function toggleDistanceMode() {
+  distanceMode = !distanceMode;
+  safeSet(DIST_MODE_KEY, distanceMode ? 'true' : 'false');
+  applyDistanceMode();
+}
+
+function applyDistanceMode() {
+  var stepLabel = document.querySelector('.step-label');
+  var stepDisplay = document.getElementById('stepDisplay');
+  var goalSub = document.querySelector('.step-goal-sub');
+  var modeBtn = document.getElementById('btnDistMode');
+
+  if (distanceMode) {
+    if (stepLabel) stepLabel.textContent = 'Distance aujourd\'hui';
+    if (stepDisplay) stepDisplay.textContent = getCurrentDistance().toFixed(2);
+    if (goalSub) goalSub.innerHTML = '/ <span id="goalValueDisp">' + distGoal.toFixed(1) + '</span> km';
+    if (modeBtn) { modeBtn.textContent = 'MODE PAS'; modeBtn.classList.add('compact-active'); }
+    // Update ring for distance
+    var pct = Math.min(1, getCurrentDistance() / distGoal);
+    document.getElementById('ringFill').style.strokeDashoffset = (RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
+  } else {
+    if (stepLabel) stepLabel.textContent = 'Pas aujourd\'hui';
+    if (stepDisplay) stepDisplay.textContent = fmtNum(stepCount);
+    if (goalSub) goalSub.innerHTML = '/ <span id="goalValueDisp">' + fmtNum(dailyGoal) + '</span>';
+    if (modeBtn) { modeBtn.textContent = 'MODE DISTANCE'; modeBtn.classList.remove('compact-active'); }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 8: Sync Code & Cross-app Sync (FIX 8: real SHA-256)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -508,7 +559,11 @@ function _updateStepsUIImmediate(isNewStep) {
   if (isRunning && activeStart) ams += Date.now() - activeStart;
   document.getElementById('minDisp').textContent = Math.floor(ams / 60000);
 
-  document.getElementById('goalValueDisp').textContent = fmtNum(dailyGoal);
+  if (distanceMode) {
+    applyDistanceMode();
+  } else {
+    document.getElementById('goalValueDisp').textContent = fmtNum(dailyGoal);
+  }
   document.getElementById('goalDisplay').textContent = fmtNum(dailyGoal);
 
   // Sync code is now async (FIX 8)
@@ -530,6 +585,7 @@ function _updateStepsUIImmediate(isNewStep) {
   updateTransformationUI();
   checkAndUpdateBestDay();
   updateCalorieRing();
+  updateDistanceGoal();
   syncToFitness();
 
   // FIX 12: Goal reached notification
@@ -1344,6 +1400,21 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
   });
 });
 
+// Distance goal controls
+document.getElementById('btnDistMode').addEventListener('click', toggleDistanceMode);
+document.getElementById('btnDistGoalDown').addEventListener('click', function() {
+  distGoal = Math.max(0.5, distGoal - 0.5);
+  safeSet(DIST_GOAL_KEY, distGoal.toString());
+  updateDistanceGoal();
+  if (distanceMode) applyDistanceMode();
+});
+document.getElementById('btnDistGoalUp').addEventListener('click', function() {
+  distGoal = Math.min(50, distGoal + 0.5);
+  safeSet(DIST_GOAL_KEY, distGoal.toString());
+  updateDistanceGoal();
+  if (distanceMode) applyDistanceMode();
+});
+
 // Calorie goal controls
 document.getElementById('btnCalGoalDown').addEventListener('click', function() {
   calGoal = Math.max(100, calGoal - 50);
@@ -1500,6 +1571,8 @@ updateTransformationUI();
 resetWaterReminder();
 checkAndUpdateBestDay();
 updateCalorieRing();
+updateDistanceGoal();
+applyDistanceMode();
 if (document.getElementById('weightDisplay')) document.getElementById('weightDisplay').textContent = userWeight + ' kg';
 renderHourlyChart();
 setupHistoryToggles();
