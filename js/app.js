@@ -1433,6 +1433,7 @@ function updateActiveMinutes() {
 }
 
 function startIntervals() {
+  setInterval(checkInactivityReminder, 30 * 60 * 1000); // Check every 30min
   midnightInterval = setInterval(checkMidnightReset, 60000);
   activeInterval = setInterval(updateActiveMinutes, 10000);
 }
@@ -2625,4 +2626,35 @@ function restoreSleepSession() {
       updateSleepUI();
     }
   } catch(e) { console.warn('Sleep restore failed:', e); }
+}
+
+
+// FEAT-S9: Inactivity reminders (every 2h between 8h-20h)
+function checkInactivityReminder() {
+  try {
+    const now = new Date();
+    const hour = now.getHours();
+    if (hour < 8 || hour > 20) return;
+
+    const remindersEnabled = safeGet('st_inactivity_remind', true);
+    if (!remindersEnabled) return;
+
+    const lastRemind = safeGet('st_last_move_remind', 0);
+    const twoHours = 2 * 60 * 60 * 1000;
+    if (Date.now() - lastRemind < twoHours) return;
+
+    // Check if steps increased in last hour
+    const hourlyData = safeGet('st_hourly_' + todayIso(), {});
+    const currentHour = hour.toString();
+    const prevHour = (hour - 1).toString();
+    const recentSteps = (hourlyData[currentHour] || 0) + (hourlyData[prevHour] || 0);
+
+    if (recentSteps < 50) {
+      safeSet('st_last_move_remind', Date.now());
+      if (typeof notify === 'function') {
+        notify('Bouge guerrier !', 'Tu es immobile depuis trop longtemps. Maintiens ton ki !');
+      }
+      showToast('\ud83d\udeb6 Bouge pour maintenir ton ki !');
+    }
+  } catch(e) { console.warn('Inactivity check error:', e); }
 }
