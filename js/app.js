@@ -632,14 +632,34 @@ function renderHistory(containerId, history, goal, type) {
     if (numDays <= 7) {
       dl.textContent = isToday ? 'Auj' : dayLabels[dow];
     } else {
-      // For 30 days, show date number
+      // For 30 days, show date number + rotate labels
       dl.textContent = isToday ? 'Auj' : new Date(day + 'T12:00:00').getDate().toString();
+      dl.style.transform = 'rotate(-45deg)';
+      dl.style.fontSize = '0.55rem';
     }
 
     const vl = document.createElement('span');
     vl.className = 'hval';
     if (numDays > 7) {
-      vl.textContent = ''; // Hide values in 30-day mode for space
+      // BUG-S4 fix: show tooltip on tap/hover instead of hiding values
+      vl.textContent = '';
+      var tipVal = '';
+      if (type === 'sleep') {
+        tipVal = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '';
+      } else if (type === 'water') {
+        tipVal = val > 0 ? val + ' verres' : '';
+      } else {
+        tipVal = val > 999 ? (val / 1000).toFixed(1) + 'k' : (val > 0 ? val.toString() : '');
+      }
+      if (tipVal) {
+        col.title = dl.textContent + ': ' + tipVal;
+        col.style.cursor = 'pointer';
+        (function(colRef, tipText) {
+          colRef.addEventListener('click', function() {
+            showToast(tipText, 1500);
+          });
+        })(col, dl.textContent + ': ' + tipVal);
+      }
     } else if (type === 'sleep') {
       vl.textContent = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '\u2014';
     } else if (type === 'water') {
