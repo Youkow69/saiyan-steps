@@ -104,6 +104,16 @@
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;background:var(--gradient-ki)"></div></div>
     </div>
 
+
+    <div class="dist-stat-row">
+      <div class="dist-main-card">
+        <span class="dist-main-label">Distance</span>
+        <span class="dist-main-value" id="distMainStat">0.00 km</span>
+        <span class="dist-main-goal" id="distGoalSub">/ 5.0 km</span>
+      </div>
+      <button class="btn-compact-toggle" id="btnDistMode" style="flex:0 0 auto;width:auto;padding:10px 14px">MODE DISTANCE</button>
+    </div>
+
     <div class="stats-row">
       <div class="stat-card"><div class="stat-icon">📍</div><span class="stat-value" id="distDisp">0.0</span><div class="stat-name">km</div></div>
       <div class="stat-card"><div class="stat-icon">🔥</div><span class="stat-value" id="calDisp">0</span><div class="stat-name">kcal</div></div>
@@ -130,6 +140,15 @@
       </div>
     </div>
 
+
+    <div class="goal-row">
+      <span class="goal-label">Objectif distance</span>
+      <div class="goal-ctrl">
+        <button id="btnDistGoalDown" aria-label="Diminuer l'objectif distance">−</button>
+        <span class="goal-val" id="distGoalDisplay">5.0 km</span>
+        <button id="btnDistGoalUp" aria-label="Augmenter l'objectif distance">+</button>
+      </div>
+    </div>
 
     <div class="goal-row">
       <span class="goal-label">Objectif kcal</span>
