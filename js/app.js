@@ -766,108 +766,201 @@ function removeGlass() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderHistory(containerId, history, goal, type) {
-  const container = document.getElementById(containerId);
+  var container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = '';
 
-  const today = todayIso();
-  const numDays = historyDays;
-  const days = [];
-  for (let i = numDays - 1; i >= 0; i--) {
-    const d = new Date();
+  var today = todayIso();
+  var numDays = historyDays;
+  var days = [];
+  for (var i = numDays - 1; i >= 0; i--) {
+    var d = new Date();
     d.setDate(d.getDate() - i);
     days.push(d.toISOString().slice(0, 10));
   }
 
-  // Update grid columns based on mode
-  container.style.gridTemplateColumns = 'repeat(' + numDays + ', 1fr)';
+  // Collect values
+  var values = [];
+  days.forEach(function(day) { values.push(history[day] || 0); });
 
-  let maxVal = Math.max(goal, 1);
-  days.forEach(function(day) {
-    const v = history[day] || 0;
-    if (v > maxVal) maxVal = v;
-  });
+  // Calculate 7-day moving average
+  var movingAvg = [];
+  for (var mi = 0; mi < values.length; mi++) {
+    var sum = 0;
+    var cnt = 0;
+    for (var mj = Math.max(0, mi - 6); mj <= mi; mj++) {
+      sum += values[mj];
+      cnt++;
+    }
+    movingAvg.push(cnt > 0 ? sum / cnt : 0);
+  }
 
-  const dayLabels = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+  var maxVal = Math.max(goal, 1);
+  values.forEach(function(v) { if (v > maxVal) maxVal = v; });
+  movingAvg.forEach(function(v) { if (v > maxVal) maxVal = v; });
 
-  days.forEach(function(day) {
-    const val = history[day] || 0;
-    const h = Math.max(3, Math.round((val / maxVal) * 62));
-    const isToday = day === today;
-    const dow = new Date(day + 'T12:00:00').getDay();
+  // Create wrapper with relative positioning for canvas overlay
+  var chartHeight = 80;
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:relative;height:' + (chartHeight + 36) + 'px';
 
-    const col = document.createElement('div');
+  // Y-axis scale (simple: 0 and max)
+  var yAxis = document.createElement('div');
+  yAxis.style.cssText = 'position:absolute;left:0;top:0;bottom:36px;width:28px;display:flex;flex-direction:column;justify-content:space-between;font-size:0.5rem;color:var(--muted);text-align:right;padding-right:4px';
+  var yTop = document.createElement('span');
+  yTop.textContent = maxVal > 999 ? (maxVal / 1000).toFixed(0) + 'k' : maxVal;
+  var yBot = document.createElement('span');
+  yBot.textContent = '0';
+  yAxis.appendChild(yTop);
+  yAxis.appendChild(yBot);
+  wrapper.appendChild(yAxis);
+
+  // Bars container
+  var barsDiv = document.createElement('div');
+  barsDiv.style.cssText = 'position:absolute;left:30px;right:0;top:0;bottom:0;display:grid;grid-template-columns:repeat(' + numDays + ',1fr);gap:' + (numDays > 7 ? '2' : '5') + 'px;align-items:flex-end;height:' + (chartHeight + 36) + 'px';
+
+  var dayLabels = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+
+  days.forEach(function(day, idx) {
+    var val = values[idx];
+    var h = Math.max(3, Math.round((val / maxVal) * chartHeight));
+    var isToday = day === today;
+    var dow = new Date(day + 'T12:00:00').getDay();
+
+    var col = document.createElement('div');
     col.className = 'hbar-col';
 
-    const bar = document.createElement('div');
+    var bar = document.createElement('div');
     bar.className = 'hbar';
 
-    // FIX 10: Color coding based on goal progress
-    if (isToday) {
-      bar.classList.add('today-' + type);
-    } else if (type === 'ki') {
-      const ratio = val / goal;
+    // DBZ color coding
+    if (type === 'ki') {
+      var ratio = val / goal;
       if (ratio >= 1) {
-        bar.style.background = 'var(--green)';
-      } else if (ratio >= 0.5) {
+        bar.style.background = isToday ? 'linear-gradient(180deg, var(--gold), var(--orange))' : 'var(--gold)';
+        bar.style.boxShadow = '0 0 6px rgba(255,215,0,0.3)';
+      } else if (ratio >= 0.8) {
         bar.style.background = 'var(--orange)';
+      } else if (ratio >= 0.5) {
+        bar.style.background = '#FF8C00';
+        bar.style.opacity = '0.7';
       } else if (val > 0) {
         bar.style.background = 'var(--red)';
+        bar.style.opacity = '0.6';
       } else {
         bar.classList.add('past');
       }
+    } else if (isToday) {
+      bar.classList.add('today-' + type);
     } else {
-      bar.classList.add(isToday ? 'today-' + type : 'past');
+      bar.classList.add(val > 0 ? 'past' : 'past');
+      if (type === 'sleep' && val > 0) bar.style.background = 'rgba(102,126,234,0.5)';
+      if (type === 'water' && val > 0) bar.style.background = 'rgba(0,212,255,0.4)';
     }
 
     bar.style.height = h + 'px';
 
-    const dl = document.createElement('span');
+    // Day label
+    var dl = document.createElement('span');
     dl.className = 'hday';
     if (numDays <= 7) {
       dl.textContent = isToday ? 'Auj' : dayLabels[dow];
     } else {
-      // For 30 days, show date number + rotate labels
-      dl.textContent = isToday ? 'Auj' : new Date(day + 'T12:00:00').getDate().toString();
+      var dateNum = new Date(day + 'T12:00:00').getDate();
+      dl.textContent = isToday ? 'Auj' : dateNum.toString();
       dl.style.transform = 'rotate(-45deg)';
       dl.style.fontSize = '0.55rem';
     }
 
-    const vl = document.createElement('span');
+    // Tap detail with rich info
+    var stepsH2 = getHistory(STEPS_KEY);
+    var sleepH2 = getHistory(SLEEP_KEY);
+    var waterH2 = getHistory(WATER_KEY);
+
+    (function(colRef, dayRef, valRef, typeRef) {
+      colRef.style.cursor = 'pointer';
+      colRef.addEventListener('click', function() {
+        var sVal = stepsH2[dayRef] || 0;
+        var distVal = (sVal * STEP_TO_KM).toFixed(2);
+        var calVal = Math.round(sVal * STEP_TO_KCAL);
+        var slVal = sleepH2[dayRef] || 0;
+        var wVal = waterH2[dayRef] || 0;
+        var parts = dayRef.split('-');
+        var months2 = ['jan','fev','mars','avr','mai','juin','juil','aout','sept','oct','nov','dec'];
+        var dateLabel = parseInt(parts[2],10) + ' ' + months2[parseInt(parts[1],10)-1];
+        var detail = dateLabel + ' : ' + fmtNum(sVal) + ' pas, ' + distVal + ' km, ' + calVal + ' kcal';
+        if (slVal > 0) detail += ', ' + slVal.toFixed(1) + 'h sommeil';
+        if (wVal > 0) detail += ', ' + wVal + ' verres';
+        showToast(detail, 3000);
+      });
+    })(col, day, val, type);
+
+    // Value label (7-day mode only)
+    var vl = document.createElement('span');
     vl.className = 'hval';
-    if (numDays > 7) {
-      // BUG-S4 fix: show tooltip on tap/hover instead of hiding values
-      vl.textContent = '';
-      var tipVal = '';
+    if (numDays <= 7) {
       if (type === 'sleep') {
-        tipVal = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '';
+        vl.textContent = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '\u2014';
       } else if (type === 'water') {
-        tipVal = val > 0 ? val + ' verres' : '';
+        vl.textContent = val > 0 ? val + '\uD83E\uDD64' : '\u2014';
       } else {
-        tipVal = val > 999 ? (val / 1000).toFixed(1) + 'k' : (val > 0 ? val.toString() : '');
+        vl.textContent = val > 999 ? (val / 1000).toFixed(1) + 'k' : (val || '\u2014');
       }
-      if (tipVal) {
-        col.title = dl.textContent + ': ' + tipVal;
-        col.style.cursor = 'pointer';
-        (function(colRef, tipText) {
-          colRef.addEventListener('click', function() {
-            showToast(tipText, 1500);
-          });
-        })(col, dl.textContent + ': ' + tipVal);
-      }
-    } else if (type === 'sleep') {
-      vl.textContent = val > 0 ? (val / 1000 * 12).toFixed(1) + 'h' : '\u2014';
-    } else if (type === 'water') {
-      vl.textContent = val > 0 ? val + '\uD83E\uDD64' : '\u2014';
-    } else {
-      vl.textContent = val > 999 ? (val / 1000).toFixed(1) + 'k' : (val || '\u2014');
     }
 
     col.appendChild(bar);
     col.appendChild(dl);
     col.appendChild(vl);
-    container.appendChild(col);
+    barsDiv.appendChild(col);
   });
+
+  wrapper.appendChild(barsDiv);
+
+  // Canvas overlay for goal line and moving average
+  var canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:absolute;left:30px;right:0;top:0;height:' + chartHeight + 'px;pointer-events:none';
+  canvas.width = 600;
+  canvas.height = chartHeight;
+  wrapper.appendChild(canvas);
+
+  container.appendChild(wrapper);
+
+  // Draw lines on canvas after DOM insertion
+  requestAnimationFrame(function() {
+    var w = canvas.offsetWidth || 600;
+    canvas.width = w;
+    var ctx2 = canvas.getContext('2d');
+    var barW = w / numDays;
+
+    // Dotted goal line
+    var goalY = chartHeight - (goal / maxVal * chartHeight);
+    ctx2.setLineDash([4, 4]);
+    ctx2.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx2.lineWidth = 1;
+    ctx2.beginPath();
+    ctx2.moveTo(0, goalY);
+    ctx2.lineTo(w, goalY);
+    ctx2.stroke();
+
+    // 7-day moving average trend line (only for 30-day view)
+    if (numDays > 7) {
+      ctx2.setLineDash([]);
+      ctx2.strokeStyle = 'rgba(255,215,0,0.6)';
+      ctx2.lineWidth = 2;
+      ctx2.beginPath();
+      movingAvg.forEach(function(avg, idx2) {
+        var x = barW * idx2 + barW / 2;
+        var y = chartHeight - (avg / maxVal * chartHeight);
+        if (idx2 === 0) ctx2.moveTo(x, y);
+        else ctx2.lineTo(x, y);
+      });
+      ctx2.stroke();
+    }
+  });
+
+  // Update grid styles (remove old grid template)
+  container.style.gridTemplateColumns = '';
+  container.style.display = 'block';
 }
 
 
