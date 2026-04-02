@@ -1438,7 +1438,7 @@ function updateActiveMinutes() {
 }
 
 function startIntervals() {
-  setInterval(checkInactivityReminder, 30 * 60 * 1000); // Check every 30min
+  // Inactivity handled by checkActivityReminder in updateActiveMinutes
   midnightInterval = setInterval(checkMidnightReset, 60000);
   activeInterval = setInterval(updateActiveMinutes, 10000);
 }
@@ -2738,6 +2738,7 @@ if ('serviceWorker' in navigator) {
 checkMidnightReset();
   restoreSleepSession();
 loadAll();
+applyTheme();
 updateStepsUI();
 updateSleepUI();
 updateWaterUI();
@@ -2760,16 +2761,16 @@ setTimeout(checkWeeklySummary, 1500);
 function restoreSleepSession() {
   try {
     const session = safeGet('st_sleep_session', null);
-    if (session && (session.status === 'active' || session.status === 'confirmed')) {
+    if (session && (session.active === true || session.confirmed === true)) {
       sleepMode = true;
       sleepStart = session.start;
-      sleepConfirmed = session.status === 'confirmed';
+      sleepConfirmed = session.confirmed === true;
       if (typeof stillnessStart === 'undefined' || !stillnessStart) {
         stillnessStart = Date.now();
       }
       // Re-attach motion listener for sleep detection
       if (typeof startListeningToMotion === 'function') {
-        startListeningToMotion();
+        window.addEventListener('devicemotion', handleSleepMotion);
       }
       showToast('Mode sommeil restaur\u00e9');
       updateSleepUI();
@@ -2778,32 +2779,3 @@ function restoreSleepSession() {
 }
 
 
-// FEAT-S9: Inactivity reminders (every 2h between 8h-20h)
-function checkInactivityReminder() {
-  try {
-    const now = new Date();
-    const hour = now.getHours();
-    if (hour < 8 || hour > 20) return;
-
-    const remindersEnabled = safeGet('st_inactivity_remind', true);
-    if (!remindersEnabled) return;
-
-    const lastRemind = safeGet('st_last_move_remind', 0);
-    const twoHours = 2 * 60 * 60 * 1000;
-    if (Date.now() - lastRemind < twoHours) return;
-
-    // Check if steps increased in last hour
-    const hourlyData = safeGet('st_hourly_' + todayIso(), {});
-    const currentHour = hour.toString();
-    const prevHour = (hour - 1).toString();
-    const recentSteps = (hourlyData[currentHour] || 0) + (hourlyData[prevHour] || 0);
-
-    if (recentSteps < 50) {
-      safeSet('st_last_move_remind', Date.now());
-      if (typeof notify === 'function') {
-        notify('Bouge guerrier !', 'Tu es immobile depuis trop longtemps. Maintiens ton ki !');
-      }
-      showToast('\ud83d\udeb6 Bouge pour maintenir ton ki !');
-    }
-  } catch(e) { console.warn('Inactivity check error:', e); }
-}
