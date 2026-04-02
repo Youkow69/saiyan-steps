@@ -32,6 +32,7 @@ const WEIGHT_KEY       = 'st_weight';
 const DIST_GOAL_KEY    = 'st_dist_goal';
 const DIST_MODE_KEY    = 'st_dist_mode';
 const WEEKLY_SHOWN_KEY = 'st_weekly_shown';
+const WEEKLY_REPORTS_KEY = 'st_weekly_reports';
 const BADGES_KEY       = 'st_badges';
 const CHALLENGES_KEY   = 'st_challenges';
 const MOVE_REMIND_KEY  = 'st_last_move_remind';
@@ -359,8 +360,8 @@ function checkAndUpdateBestDay() {
     safeSet(BEST_DAY_KEY, JSON.stringify(best));
     if (wasRecord) {
       showConfetti();
-      sendNotif('Nouveau record !', fmtNum(stepCount) + ' pas ! Tu as depasse ton record !');
-      showToast('Nouveau record personnel : ' + fmtNum(stepCount) + ' pas !', 4000);
+      sendNotif('NOUVEAU RECORD DE POUVOIR !', fmtNum(stepCount) + ' pas ! Tu as d\u00e9pass\u00e9 ton record !');
+      showToast('\u26A1 NOUVEAU RECORD DE POUVOIR ! ' + fmtNum(stepCount) + ' pas !', 4000);
     }
   }
 
@@ -368,10 +369,10 @@ function checkAndUpdateBestDay() {
     var dateStr = best.date;
     try {
       var parts = best.date.split('-');
-      var months = ['jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
+      var months = ['jan', 'f\u00e9v', 'mars', 'avr', 'mai', 'juin', 'juil', 'ao\u00fbt', 'sept', 'oct', 'nov', 'd\u00e9c'];
       dateStr = parseInt(parts[2], 10) + ' ' + months[parseInt(parts[1], 10) - 1];
     } catch(e) {}
-    recordEl.textContent = 'Record : ' + fmtNum(best.steps) + ' pas (' + dateStr + ')';
+    recordEl.textContent = '\uD83C\uDFC6 Record : ' + fmtNum(best.steps) + ' pas (' + dateStr + ')';
     recordEl.classList.remove('hidden');
   } else {
     recordEl.classList.add('hidden');
@@ -453,13 +454,16 @@ function updateCalorieRing() {
     ringEl.style.strokeDashoffset = (CAL_RING_CIRCUMFERENCE * (1 - pct)).toFixed(2);
   }
   if (textEl) {
-    textEl.textContent = cal + ' kcal';
+    textEl.textContent = cal + ' / ' + calGoal + ' kcal';
   }
   if (goalEl) {
-    goalEl.textContent = '/ ' + calGoal + ' kcal';
+    goalEl.textContent = '\uD83D\uDD25 Ki br\u00fbl\u00e9';
   }
   // Also update the main calorie display
   document.getElementById('calDisp').textContent = cal;
+  // Update calorie goal display in compact section
+  var calGoalDisp = document.getElementById('calGoalDisplay');
+  if (calGoalDisp) calGoalDisp.textContent = calGoal;
 }
 
 
@@ -831,15 +835,16 @@ function renderHistory(containerId, history, goal, type) {
   var wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:relative;height:' + (chartHeight + 36) + 'px';
 
-  // Y-axis scale (simple: 0 and max)
+  // Y-axis scale with 4 graduations
   var yAxis = document.createElement('div');
-  yAxis.style.cssText = 'position:absolute;left:0;top:0;bottom:36px;width:28px;display:flex;flex-direction:column;justify-content:space-between;font-size:0.5rem;color:var(--muted);text-align:right;padding-right:4px';
-  var yTop = document.createElement('span');
-  yTop.textContent = maxVal > 999 ? (maxVal / 1000).toFixed(0) + 'k' : maxVal;
-  var yBot = document.createElement('span');
-  yBot.textContent = '0';
-  yAxis.appendChild(yTop);
-  yAxis.appendChild(yBot);
+  yAxis.style.cssText = 'position:absolute;left:0;top:0;bottom:36px;width:32px;display:flex;flex-direction:column;justify-content:space-between;font-size:0.48rem;color:var(--muted);text-align:right;padding-right:4px';
+  var gradSteps = [1, 0.75, 0.5, 0.25, 0];
+  gradSteps.forEach(function(frac) {
+    var yLabel = document.createElement('span');
+    var val2 = Math.round(maxVal * frac);
+    yLabel.textContent = val2 > 999 ? (val2 / 1000).toFixed(1) + 'k' : val2;
+    yAxis.appendChild(yLabel);
+  });
   wrapper.appendChild(yAxis);
 
   // Bars container
@@ -969,8 +974,8 @@ function renderHistory(containerId, history, goal, type) {
     ctx2.lineTo(w, goalY);
     ctx2.stroke();
 
-    // 7-day moving average trend line (only for 30-day view)
-    if (numDays > 7) {
+    // 7-day moving average trend line (all views)
+    if (numDays >= 7) {
       ctx2.setLineDash([]);
       ctx2.strokeStyle = 'rgba(255,215,0,0.6)';
       ctx2.lineWidth = 2;
@@ -1602,6 +1607,24 @@ function checkWeeklySummary() {
 
   modal.classList.remove('hidden');
   safeSet(WEEKLY_SHOWN_KEY, today);
+
+  // FEAT-S4: Store weekly report for later viewing
+  var reports = [];
+  try { reports = JSON.parse(safeGet(WEEKLY_REPORTS_KEY, '[]')); } catch(e) { reports = []; }
+  reports.unshift({
+    date: today,
+    totalSteps: totalSteps,
+    avgSteps: avgSteps,
+    bestDay: bestDay,
+    worstDay: worstDay,
+    goalsAchieved: goalsAchieved,
+    avgSleep: avgSleep,
+    avgWater: avgWater,
+    diff: diff
+  });
+  // Keep max 12 weeks
+  if (reports.length > 12) reports = reports.slice(0, 12);
+  safeSet(WEEKLY_REPORTS_KEY, JSON.stringify(reports));
 }
 
 
@@ -1610,16 +1633,16 @@ function checkWeeklySummary() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 var BADGE_DEFS = [
-  { id: 'premier_pas', name: 'Premier pas', desc: 'Faire ton premier pas', icon: '\u{1F463}', check: function() { return getTotalAllTimeSteps() >= 1; } },
-  { id: 'club_10k', name: '10K Club', desc: '10 000 pas en un jour', icon: '\u{1F3C6}', check: function() {
+  { id: 'premier_pas', name: 'Premier Pas', desc: '1 pas \u2014 Dragon Ball 1 \u00e9toile', icon: '\uD83C\uDF1F', check: function() { return getTotalAllTimeSteps() >= 1; } },
+  { id: 'club_10k', name: '10K Club', desc: '10 000 pas en un jour \u2014 4 \u00e9toiles', icon: '\u2B50', check: function() {
     var h = getHistory(STEPS_KEY);
     return Object.values(h).some(function(v) { return v >= 10000; });
   }},
-  { id: 'marathon', name: 'Marathon', desc: '42 195 pas en un jour', icon: '\u{1F3C3}', check: function() {
+  { id: 'marathon', name: 'Marathon', desc: '42 195 pas en un jour \u2014 7 \u00e9toiles', icon: '\uD83D\uDD34', check: function() {
     var h = getHistory(STEPS_KEY);
     return Object.values(h).some(function(v) { return v >= 42195; });
   }},
-  { id: 'semaine_parfaite', name: 'Semaine parfaite', desc: '7 jours consecutifs a l\'objectif', icon: '\u2B50', check: function() {
+  { id: 'semaine_parfaite', name: 'Semaine Parfaite', desc: '7/7 objectifs atteints \u2014 Potara', icon: '\uD83C\uDFC5', check: function() {
     var h = getHistory(STEPS_KEY);
     var streak2 = 0;
     var d = new Date();
@@ -1635,19 +1658,19 @@ var BADGE_DEFS = [
     }
     return false;
   }},
-  { id: 'hydrate', name: 'Hydrate', desc: '30 jours avec 8+ verres', icon: '\u{1F4A7}', check: function() {
+  { id: 'hydrate', name: 'Hydrat\u00e9', desc: '30 jours cons\u00e9cutifs 8+ verres \u2014 Senzu Bean', icon: '\uD83D\uDCA7', check: function() {
     var h = getHistory(WATER_KEY);
     var count3 = 0;
     Object.values(h).forEach(function(v) { if (v >= 8) count3++; });
     return count3 >= 30;
   }},
-  { id: 'dormeur_elite', name: 'Dormeur d\'elite', desc: '14 jours avec 7h+ de sommeil', icon: '\u{1F31F}', check: function() {
+  { id: 'dormeur_elite', name: "Dormeur d'\u00c9lite", desc: '14 jours 7h+ sommeil \u2014 HTC', icon: '\uD83D\uDE34', check: function() {
     var h = getHistory(SLEEP_KEY);
     var count4 = 0;
     Object.values(h).forEach(function(v) { if (v >= 7) count4++; });
     return count4 >= 14;
   }},
-  { id: 'super_saiyan_steps', name: 'Super Saiyan Steps', desc: '1 000 000 pas cumules', icon: '\u{1F525}', check: function() { return getTotalAllTimeSteps() >= 1000000; } }
+  { id: 'million_steps', name: 'Million Steps', desc: '1 000 000 pas cumul\u00e9s \u2014 Ultra Instinct', icon: '\uD83D\uDD25', check: function() { return getTotalAllTimeSteps() >= 1000000; } }
 ];
 
 function getUnlockedBadges() {
@@ -1658,32 +1681,37 @@ function getUnlockedBadges() {
 function checkBadges() {
   var unlocked = getUnlockedBadges();
   var changed = false;
+  var newlyUnlocked = [];
 
   BADGE_DEFS.forEach(function(badge) {
     if (unlocked.indexOf(badge.id) === -1 && badge.check()) {
       unlocked.push(badge.id);
+      newlyUnlocked.push(badge.id);
       changed = true;
-      showToast(badge.icon + ' Badge debloque : ' + badge.name + ' !', 4000);
-      sendNotif('Badge debloque !', badge.icon + ' ' + badge.name);
+      showToast(badge.icon + ' Badge d\u00e9bloqu\u00e9 : ' + badge.name + ' !', 4000);
+      sendNotif('Badge d\u00e9bloqu\u00e9 !', badge.icon + ' ' + badge.name);
+      showConfetti();
     }
   });
 
   if (changed) {
     safeSet(BADGES_KEY, JSON.stringify(unlocked));
   }
-  renderBadges(unlocked);
+  renderBadges(unlocked, newlyUnlocked);
 }
 
-function renderBadges(unlocked) {
+function renderBadges(unlocked, newlyUnlocked) {
   var container = document.getElementById('badgesGrid');
   if (!container) return;
   container.innerHTML = '';
+  if (!newlyUnlocked) newlyUnlocked = [];
 
   BADGE_DEFS.forEach(function(badge) {
     var isUnlocked = unlocked.indexOf(badge.id) !== -1;
+    var isNew = newlyUnlocked.indexOf(badge.id) !== -1;
     var el = document.createElement('div');
-    el.className = 'badge-card' + (isUnlocked ? ' unlocked' : '');
-    el.innerHTML = '<div class="badge-icon">' + (isUnlocked ? badge.icon : '\u{1F512}') + '</div>' +
+    el.className = 'badge-card' + (isUnlocked ? ' unlocked' : '') + (isNew ? ' just-unlocked' : '');
+    el.innerHTML = '<div class="badge-icon">' + (isUnlocked ? badge.icon : '\uD83D\uDD12') + '</div>' +
       '<div class="badge-name">' + badge.name + '</div>' +
       '<div class="badge-desc">' + badge.desc + '</div>';
     container.appendChild(el);
@@ -1697,39 +1725,57 @@ function renderBadges(unlocked) {
 
 var CHALLENGE_DEFS = [
   {
-    id: 'goku_training',
-    name: 'Entrainement de Goku',
+    id: 'tortue_geniale',
+    name: 'Entra\u00eenement de Tortue G\u00e9niale',
     desc: '15 000 pas/jour pendant 7 jours',
-    icon: '\u{1F4AA}',
+    icon: '\uD83D\uDC22',
+    badge: '\uD83D\uDC22',
     duration: 7,
+    target: 15000,
     check: function(dayData) { return dayData.steps >= 15000; }
   },
   {
     id: 'gravity_x10',
-    name: 'Gravite x10',
-    desc: 'Double ton objectif pendant 3 jours',
-    icon: '\u{1F30D}',
+    name: 'Gravit\u00e9 \u00d710',
+    desc: '2\u00d7 ton objectif quotidien pendant 3 jours',
+    icon: '\uD83D\uDCAA',
+    badge: '\uD83D\uDCAA',
     duration: 3,
+    target: 0,
     check: function(dayData) { return dayData.steps >= dailyGoal * 2; }
   },
   {
     id: 'snake_way',
     name: 'Course Snake Way',
-    desc: '100 000 pas en 7 jours',
-    icon: '\u{1F40D}',
+    desc: '100 000 pas total en 7 jours',
+    icon: '\uD83D\uDC0D',
+    badge: '\uD83D\uDC0D',
     duration: 7,
+    target: 100000,
     check: null,
     checkTotal: function(totalSteps) { return totalSteps >= 100000; }
   },
   {
-    id: 'whis_training',
-    name: 'Entrainement de Whis',
-    desc: 'Objectif + 8 verres + 7h sommeil x5j',
-    icon: '\u{1F47C}',
+    id: 'whis_regime',
+    name: 'R\u00e9gime de Whis',
+    desc: 'Objectif pas + 8 verres + 7h sommeil pendant 5 jours',
+    icon: '\uD83D\uDC7C',
+    badge: '\uD83D\uDC7C',
     duration: 5,
+    target: 0,
     check: function(dayData) {
       return dayData.steps >= dailyGoal && dayData.water >= 8 && dayData.sleep >= 7;
     }
+  },
+  {
+    id: 'vegeta_training',
+    name: 'Entra\u00eenement de Vegeta',
+    desc: '20 000 pas/jour pendant 30 jours',
+    icon: '\uD83D\uDC51',
+    badge: '\uD83D\uDC51',
+    duration: 30,
+    target: 20000,
+    check: function(dayData) { return dayData.steps >= 20000; }
   }
 ];
 
@@ -1939,6 +1985,13 @@ function openSettingsModal() {
   document.getElementById('profileSex').value = p.sex;
   document.getElementById('sleepGoalInput').value = sleepGoalH;
   document.getElementById('themeToggle').checked = lightTheme;
+  // FEAT-S8: Load goal fields
+  var stepGoalEl = document.getElementById('profileStepGoal');
+  var calGoalEl = document.getElementById('profileCalGoal');
+  var distGoalEl = document.getElementById('profileDistGoal');
+  if (stepGoalEl) stepGoalEl.value = dailyGoal;
+  if (calGoalEl) calGoalEl.value = calGoal;
+  if (distGoalEl) distGoalEl.value = distGoal;
   modal.classList.remove('hidden');
 }
 
@@ -1978,11 +2031,38 @@ function saveSettingsFromModal() {
     applyTheme();
   }
 
+  // FEAT-S8: Save step/cal/dist goals from settings
+  var stepGoalEl = document.getElementById('profileStepGoal');
+  if (stepGoalEl) {
+    var newStepGoal = parseInt(stepGoalEl.value, 10);
+    if (!isNaN(newStepGoal) && newStepGoal >= 1000 && newStepGoal <= 50000) {
+      dailyGoal = newStepGoal;
+      safeSet(GOAL_KEY, dailyGoal.toString());
+    }
+  }
+  var calGoalEl = document.getElementById('profileCalGoal');
+  if (calGoalEl) {
+    var newCalGoal = parseInt(calGoalEl.value, 10);
+    if (!isNaN(newCalGoal) && newCalGoal >= 100 && newCalGoal <= 2000) {
+      calGoal = newCalGoal;
+      safeSet(CAL_GOAL_KEY, calGoal.toString());
+    }
+  }
+  var distGoalEl = document.getElementById('profileDistGoal');
+  if (distGoalEl) {
+    var newDistGoal = parseFloat(distGoalEl.value);
+    if (!isNaN(newDistGoal) && newDistGoal >= 1 && newDistGoal <= 50) {
+      distGoal = newDistGoal;
+      safeSet(DIST_GOAL_KEY, distGoal.toString());
+    }
+  }
+
   updateCalorieRing();
+  updateDistanceGoal();
   updateStepsUI();
   updateSleepUI();
   closeSettingsModal();
-  showToast('Profil sauvegarde !');
+  showToast('Profil sauvegard\u00e9 !');
 }
 
 
@@ -2353,6 +2433,71 @@ async function loadLeaderboard() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22m: FEAT-S4 — Weekly Reports Viewer
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderWeeklyReports() {
+  var container = document.getElementById('weeklyReportsContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var reports = [];
+  try { reports = JSON.parse(safeGet(WEEKLY_REPORTS_KEY, '[]')); } catch(e) { reports = []; }
+
+  if (reports.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;text-align:center;padding:8px">Aucun rapport disponible. Le premier sera g\u00e9n\u00e9r\u00e9 lundi.</div>';
+    return;
+  }
+
+  reports.forEach(function(r) {
+    var el = document.createElement('div');
+    el.className = 'weekly-report-item';
+    var diffArrow = r.diff >= 0 ? '\u2191' : '\u2193';
+    var diffColor = r.diff >= 0 ? 'var(--green)' : 'var(--red)';
+    el.innerHTML = '<strong>' + r.date + '</strong> \u2014 ' +
+      fmtNum(r.totalSteps) + ' pas (moy: ' + fmtNum(r.avgSteps) + '/j) \u2014 ' +
+      r.goalsAchieved + '/7 objectifs \u2014 ' +
+      '<span style="color:' + diffColor + '">' + diffArrow + Math.abs(r.diff) + '%</span> vs pr\u00e9c.';
+    el.addEventListener('click', function() {
+      showWeeklyReportDetail(r);
+    });
+    container.appendChild(el);
+  });
+}
+
+function showWeeklyReportDetail(r) {
+  function fmtDate(iso) {
+    if (!iso) return '?';
+    try {
+      var parts = iso.split('-');
+      var months = ['jan','f\u00e9v','mars','avr','mai','juin','juil','ao\u00fbt','sept','oct','nov','d\u00e9c'];
+      return parseInt(parts[2],10) + ' ' + months[parseInt(parts[1],10)-1];
+    } catch(e) { return iso; }
+  }
+  var diffSign = r.diff >= 0 ? '+' : '';
+  var diffColor = r.diff >= 0 ? 'var(--green)' : 'var(--red)';
+  var body = document.getElementById('weeklyModalBody');
+  body.innerHTML =
+    '<div style="font-size:2rem;margin-bottom:8px">\uD83D\uDCCA</div>' +
+    '<div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">Semaine du ' + r.date + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:12px">' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + fmtNum(r.totalSteps) + '</div><div class="weekly-stat-lbl">Pas total</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + fmtNum(r.avgSteps) + '</div><div class="weekly-stat-lbl">Moy/jour</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val" style="color:' + diffColor + '">' + diffSign + r.diff + '%</div><div class="weekly-stat-lbl">vs sem. pr\u00e9c.</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + r.goalsAchieved + '/7</div><div class="weekly-stat-lbl">Objectifs</div></div>' +
+    '</div>' +
+    '<div style="font-size:0.78rem;color:var(--muted);line-height:1.8;text-align:left">' +
+      'Meilleur jour : <strong style="color:var(--green)">' + fmtNum(r.bestDay.steps) + ' pas</strong> (' + fmtDate(r.bestDay.date) + ')<br>' +
+      'Pire jour : <strong style="color:var(--red)">' + fmtNum(r.worstDay.steps) + ' pas</strong> (' + fmtDate(r.worstDay.date) + ')<br>' +
+      'Sommeil moy : <strong style="color:#a78bfa">' + r.avgSleep + 'h</strong><br>' +
+      'Hydratation moy : <strong style="color:var(--blue)">' + r.avgWater + ' verres</strong>' +
+    '</div>';
+  document.getElementById('weeklyModal').classList.remove('hidden');
+}
+
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -2389,7 +2534,7 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     if (tabId === 'steps') { renderStepsHistory(); renderHourlyChart(); }
     if (tabId === 'sleep') { renderSleepHistory(); renderSleepDetailHistory(); }
     if (tabId === 'water') updateWaterUI();
-    if (tabId === 'more') { loadLeaderboard(); }
+    if (tabId === 'more') { loadLeaderboard(); renderChallenges(); renderWeeklyReports(); checkBadges(); }
   });
 });
 
@@ -2447,6 +2592,10 @@ var btnExportJSON = document.getElementById('btnExportJSON');
 if (btnExportJSON) btnExportJSON.addEventListener('click', exportDataJSON);
 var btnExportCSV = document.getElementById('btnExportCSV');
 if (btnExportCSV) btnExportCSV.addEventListener('click', exportDataCSV);
+
+// FEAT-S4: Weekly reports viewer
+var btnViewReports = document.getElementById('btnViewWeeklyReports');
+if (btnViewReports) btnViewReports.addEventListener('click', renderWeeklyReports);
 
 // FEAT-S16: Leaderboard
 var btnRefreshLB = document.getElementById('btnRefreshLeaderboard');
