@@ -158,15 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // FEAT-S15: Sync to leaderboard table
 async function syncStepsLeaderboard() {
-  if (!window._supabaseClient) return;
+  const sb = getSbClient();
+  if (!sb) return;
   try {
-    const user = (await window._supabaseClient.auth.getUser()).data.user;
+    const user = (await sb.auth.getUser()).data.user;
     if (!user) return;
     const profile = JSON.parse(localStorage.getItem('st_user_profile') || '{}');
     const totalSteps = parseInt(localStorage.getItem('st_total_steps') || '0');
     const streak = parseInt(localStorage.getItem('st_streak') || '0');
 
-    await window._supabaseClient.from('leaderboard').upsert({
+    await sb.from('leaderboard').upsert({
       user_id: user.id,
       display_name: profile.name || user.email.split('@')[0],
       weekly_steps: totalSteps,
