@@ -469,3 +469,30 @@ footer { font-size: max(0.75rem, 0.65rem); }
 .compact-content.hidden {
   display: none !important;
 }
+
+
+/* ── Calorie Ring ── */
+.cal-ring-wrap {
+  position: relative;
+  width: min(140px, 38vw);
+  height: min(140px, 38vw);
+  margin: -8px auto 0;
+}
+.cal-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.cal-ring-bg { fill: none; stroke: rgba(255,68,68,0.1); }
+.cal-ring-fill { fill: none; stroke: url(#calRingGrad); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.cal-ring-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.cal-ring-label {
+  font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted);
+}
+.cal-ring-text {
+  font-family: 'Orbitron', monospace; font-weight: 700;
+  font-size: clamp(0.9rem, 4vw, 1.2rem); color: var(--red); line-height: 1;
+}
+.cal-ring-goal {
+  font-size: 0.6rem; color: var(--muted);
+}
