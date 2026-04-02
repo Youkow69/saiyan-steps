@@ -440,3 +440,32 @@ footer { font-size: max(0.75rem, 0.65rem); }
   border-radius: 12px;
 }
 .best-day-display.hidden { display: none; }
+
+
+/* ── Compact Mode ── */
+.btn-compact-toggle {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-compact-toggle:active { background: rgba(255,255,255,0.1); }
+.btn-compact-toggle.compact-active {
+  border-color: rgba(255,200,61,0.4);
+  background: rgba(255,200,61,0.06);
+  color: var(--gold);
+}
+.compact-content {
+  display: contents;
+}
+.compact-content.hidden {
+  display: none !important;
+}
