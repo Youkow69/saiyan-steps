@@ -1089,3 +1089,22 @@ footer { font-size: max(0.75rem, 0.65rem); }
   display: block;
 }
 
+
+
+/* FEAT-S16: Responsive tablet/desktop */
+@media (min-width: 768px) {
+  body { max-width: 480px; margin: 0 auto; }
+  .tab-page { padding: 20px; }
+  .card { padding: 20px; }
+}
+@media (min-width: 1024px) {
+  body { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.3); min-height: 100vh; }
+}
+
+/* FEAT-S17: Compact mode */
+@media (max-height: 400px) {
+  .top-bar { display: none; }
+  .bottom-nav { padding: 4px 0; }
+  .card { padding: 10px; margin-bottom: 6px; }
+  .ring-container { transform: scale(0.8); }
+}
