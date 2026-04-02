@@ -974,10 +974,16 @@ function requestNotifPermission() {
 }
 
 function sendNotif(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker && navigator.serviceWorker.controller) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // BUG-S5 fix: fallback to new Notification() if SW controller not ready
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     navigator.serviceWorker.ready.then(function(reg) {
       reg.showNotification(title, { body: body, icon: 'icon.svg' });
     });
+  } else {
+    try {
+      new Notification(title, { body: body, icon: 'icon.svg' });
+    } catch (e) { /* some browsers block Notification constructor */ }
   }
 }
 
