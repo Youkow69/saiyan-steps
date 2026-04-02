@@ -25,6 +25,7 @@ const LAST_DATE_KEY    = 'st_last_date';
 const SLEEP_SESSION_KEY = 'st_sleep_session';
 const ACTIVE_DATE_KEY  = 'st_active_date';
 const HISTORY_MODE_KEY = 'st_history_mode';
+const BEST_DAY_KEY     = 'st_best_day';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -297,6 +298,97 @@ function updateTransformationUI() {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 7b: Personal Record (Best Day)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function getBestDay() {
+  try {
+    return JSON.parse(safeGet(BEST_DAY_KEY, '{"steps":0,"date":""}'));
+  } catch (e) { return { steps: 0, date: '' }; }
+}
+
+function checkAndUpdateBestDay() {
+  var best = getBestDay();
+  var recordEl = document.getElementById('bestDayDisplay');
+  if (!recordEl) return;
+
+  if (stepCount > best.steps && stepCount > 0) {
+    var wasRecord = best.steps > 0;
+    best.steps = stepCount;
+    best.date = todayIso();
+    safeSet(BEST_DAY_KEY, JSON.stringify(best));
+    if (wasRecord) {
+      showConfetti();
+      sendNotif('Nouveau record !', fmtNum(stepCount) + ' pas ! Tu as depasse ton record !');
+      showToast('Nouveau record personnel : ' + fmtNum(stepCount) + ' pas !', 4000);
+    }
+  }
+
+  if (best.steps > 0) {
+    var dateStr = best.date;
+    try {
+      var parts = best.date.split('-');
+      var months = ['jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
+      dateStr = parseInt(parts[2], 10) + ' ' + months[parseInt(parts[1], 10) - 1];
+    } catch(e) {}
+    recordEl.textContent = 'Record : ' + fmtNum(best.steps) + ' pas (' + dateStr + ')';
+    recordEl.classList.remove('hidden');
+  } else {
+    recordEl.classList.add('hidden');
+  }
+}
+
+function showConfetti() {
+  var canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var colors = ['#FFD700', '#FF8C00', '#FF4500', '#39FF14', '#37B7FF', '#9B59B6'];
+
+  for (var i = 0; i < 80; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 8 + 4,
+      h: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vy: Math.random() * 3 + 2,
+      vx: (Math.random() - 0.5) * 2,
+      rot: Math.random() * 360,
+      vr: (Math.random() - 0.5) * 8
+    });
+  }
+
+  var frames = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(function(p) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    frames++;
+    if (frames < 120) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'none';
+    }
+  }
+  animate();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 8: Sync Code & Cross-app Sync (FIX 8: real SHA-256)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -395,6 +487,7 @@ function _updateStepsUIImmediate(isNewStep) {
   renderHourlyChart();
   updateStreak();
   updateTransformationUI();
+  checkAndUpdateBestDay();
   syncToFitness();
 
   // FIX 12: Goal reached notification
@@ -1308,6 +1401,7 @@ updateSleepUI();
 updateWaterUI();
 updateTransformationUI();
 resetWaterReminder();
+checkAndUpdateBestDay();
 renderHourlyChart();
 setupHistoryToggles();
 startIntervals();
