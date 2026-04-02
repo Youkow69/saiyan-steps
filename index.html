@@ -251,6 +251,18 @@
       <div class="history-wrap" id="sleepHistory"></div>
     </div>
 
+    <!-- FEAT-S13: Detailed sleep history -->
+    <details class="card">
+      <summary class="card-title" style="cursor:pointer;margin-bottom:0">📊 <span>Historique detaille du sommeil</span></summary>
+      <div id="sleepDetailHistory" style="display:flex;flex-direction:column;gap:4px;padding-top:10px"></div>
+    </details>
+
+    <!-- FEAT-S13: Sleep pattern chart -->
+    <details class="card">
+      <summary class="card-title" style="cursor:pointer;margin-bottom:0">📈 <span>Tendances sommeil</span></summary>
+      <div id="sleepPatternChart" style="display:flex;flex-direction:column;gap:3px;padding-top:10px"></div>
+    </details>
+
     <div class="card" style="font-size:0.78rem;color:var(--muted);line-height:1.6">
       <div class="card-title">💡 <span>Comment ca marche</span></div>
       Appuie sur "Mode Sommeil", pose ton telephone sans le bouger. L'accelerometre confirme que tu dors si le telephone reste immobile pendant 5 minutes. Quand tu te leves, rouvre l'app et appuie sur "Je suis reveille".
@@ -304,6 +316,44 @@
     <footer>Propulse par Katrava ⚡</footer>
   </div>
 
+  <!-- PLUS/SETTINGS TAB -->
+  <div class="tab-page" id="tab-more" role="tabpanel" aria-labelledby="nav-more">
+
+    <!-- FEAT-S10: Settings button -->
+    <div class="card" style="text-align:center;padding:20px">
+      <div style="font-size:2rem;margin-bottom:8px">⚙️</div>
+      <h3 style="font-family:'Orbitron',sans-serif;color:var(--gold);margin-bottom:12px">Parametres</h3>
+      <button class="btn-ki" id="btnSettings" style="width:100%">👤 Mon Profil & Reglages</button>
+    </div>
+
+    <!-- FEAT-S11: Data export -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">📥 <span>Exporter mes donnees</span></div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">Telecharge ton historique complet (pas, sommeil, hydratation) en JSON ou CSV.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ki" id="btnExportJSON" style="flex:1;font-size:0.82rem">JSON</button>
+        <button class="btn-ki" id="btnExportCSV" style="flex:1;font-size:0.82rem;background:linear-gradient(135deg,#37B7FF,#0066cc)">CSV</button>
+      </div>
+    </div>
+
+    <!-- FEAT-S16: Friends Leaderboard -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">🏆 <span>Classement du Tenkaichi Budokai des Marcheurs</span></div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">Classement hebdomadaire des guerriers connectes.</p>
+      <div id="leaderboardList" style="display:flex;flex-direction:column;gap:4px"></div>
+      <button class="btn-ki" id="btnRefreshLeaderboard" style="width:100%;margin-top:12px;font-size:0.82rem">🔄 Rafraichir le classement</button>
+    </div>
+
+    <!-- FEAT-S17: Health API Note -->
+    <div class="card" style="font-size:0.78rem;color:var(--muted);line-height:1.6;padding:16px">
+      <div class="card-title">ℹ️ <span>A propos des limitations PWA</span></div>
+      <p>Saiyan Tracker est une PWA (Progressive Web App). Les API natives de sante (Apple HealthKit, Google Health Connect) ne sont pas disponibles depuis un navigateur web. Le compteur de pas utilise l'accelerometre du telephone, ce qui peut etre moins precis qu'une application native. Pour une meilleure precision, gardez votre telephone sur vous et utilisez la sensibilite adaptee a votre style de marche.</p>
+      <p style="margin-top:8px">Les donnees de sommeil sont basees sur la detection d'immobilite du telephone et ne remplacent pas un dispositif de suivi du sommeil professionnel.</p>
+    </div>
+
+    <footer>Propulse par Katrava ⚡</footer>
+  </div>
+
 </div>
 
 
@@ -330,7 +380,60 @@
     <span class="nav-icon">💧</span>
     <span class="nav-label">Eau</span>
   </button>
+  <button class="nav-btn" data-tab="more" id="nav-more" role="tab" aria-selected="false" aria-controls="tab-more" aria-label="Plus">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Plus</span>
+  </button>
 </nav>
+
+<!-- FEAT-S10: Settings Modal -->
+<div class="modal-overlay hidden" id="settingsModal">
+  <div class="modal-card" style="max-width:400px">
+    <h3 style="font-family:'Orbitron',sans-serif;color:var(--gold);margin-bottom:16px">👤 Profil du Guerrier</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="settings-field">
+        <label>Poids (kg)</label>
+        <input type="number" id="profileWeight" min="20" max="300" value="70" class="settings-input">
+      </div>
+      <div class="settings-field">
+        <label>Taille (cm)</label>
+        <input type="number" id="profileHeight" min="100" max="250" value="175" class="settings-input">
+      </div>
+      <div class="settings-field">
+        <label>Age</label>
+        <input type="number" id="profileAge" min="5" max="120" value="30" class="settings-input">
+      </div>
+      <div class="settings-field">
+        <label>Sexe</label>
+        <select id="profileSex" class="settings-input">
+          <option value="M">Homme</option>
+          <option value="F">Femme</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-field" style="margin-bottom:16px">
+      <label>Objectif sommeil (heures) — min 5h, max 10h</label>
+      <input type="number" id="sleepGoalInput" min="5" max="10" step="0.5" value="8" class="settings-input" style="width:100%">
+    </div>
+    <div class="settings-field" style="margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <label for="themeToggle">Mode clair</label>
+      <input type="checkbox" id="themeToggle" style="width:20px;height:20px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ki" id="btnSaveSettings" style="flex:1">SAUVEGARDER</button>
+      <button class="btn-reset" id="btnCloseSettings" style="flex:0 0 auto;padding:12px 18px">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEAT-S15: Transformation Animation Overlay -->
+<div class="transform-overlay hidden" id="transformOverlay">
+  <div class="transform-anim-content">
+    <div class="transform-anim-emoji" id="transformAnimEmoji">⚡</div>
+    <div class="transform-anim-name" id="transformAnimName">Super Saiyan</div>
+    <div class="transform-anim-sub">Transformation atteinte !</div>
+  </div>
+</div>
 
 <canvas id="confettiCanvas" style="position:fixed;inset:0;z-index:999;pointer-events:none;display:none"></canvas>
 <script src="js/app.js" defer></script>
