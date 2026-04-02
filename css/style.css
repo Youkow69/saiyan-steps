@@ -672,3 +672,169 @@ footer { font-size: max(0.75rem, 0.65rem); }
   background: rgba(255,200,61,0.18);
   transform: scale(0.97);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FEAT-S10, S13, S14, S15, S16 — Additional Styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* FEAT-S10: Settings Modal Fields */
+.settings-field { display: flex; flex-direction: column; gap: 4px; }
+.settings-field label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.settings-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+}
+.settings-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(255,215,0,0.15);
+}
+
+/* FEAT-S13: Sleep detail rows */
+.sleep-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--stroke);
+}
+.sleep-detail-date {
+  min-width: 40px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.sleep-detail-time {
+  flex: 1;
+  color: #a78bfa;
+}
+.sleep-detail-dur {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+/* FEAT-S14: Light theme overrides */
+.light-theme .ring-bg { stroke: rgba(0,0,0,0.06); }
+.light-theme .cal-ring-bg { stroke: rgba(0,0,0,0.06); }
+.light-theme .btn-ki {
+  color: #fff;
+}
+.light-theme .summary-chip {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.08);
+}
+.light-theme .card {
+  background: var(--bg-card);
+  border-color: var(--stroke);
+}
+.light-theme .bottom-nav {
+  background: var(--bg-card);
+  border-color: var(--stroke);
+}
+.light-theme .top-bar {
+  background: var(--bg-card);
+  border-color: var(--stroke);
+}
+.light-theme footer {
+  color: var(--muted);
+}
+.light-theme .progress-bar {
+  background: rgba(0,0,0,0.06);
+}
+.light-theme .hbar.past {
+  background: rgba(0,0,0,0.08);
+}
+.light-theme .settings-input {
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  border-color: var(--stroke);
+}
+
+/* FEAT-S15: Transformation Overlay */
+.transform-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.transform-overlay.hidden { display: none; }
+.transform-anim-content {
+  text-align: center;
+  animation: transformPulse 0.5s ease-out;
+}
+.transform-anim-emoji {
+  font-size: 6rem;
+  animation: transformFloat 1s ease-in-out infinite alternate;
+}
+.transform-anim-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2rem;
+  color: var(--gold);
+  margin-top: 16px;
+  text-shadow: 0 0 30px rgba(255,215,0,0.6);
+}
+.transform-anim-sub {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+@keyframes transformPulse {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes transformFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-12px); }
+}
+@keyframes transformFlash {
+  0% { background: rgba(255,215,0,0.3); }
+  100% { background: rgba(0,0,0,0.95); }
+}
+
+/* FEAT-S16: Leaderboard */
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--stroke);
+}
+.leaderboard-me {
+  background: rgba(255,215,0,0.08);
+  border-color: rgba(255,215,0,0.3);
+}
+.lb-rank {
+  min-width: 28px;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.lb-name {
+  flex: 1;
+  font-weight: 700;
+  color: var(--text);
+}
+.lb-transform {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.lb-steps {
+  font-weight: 700;
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+}
