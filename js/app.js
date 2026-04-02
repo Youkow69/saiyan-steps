@@ -26,6 +26,7 @@ const SLEEP_SESSION_KEY = 'st_sleep_session';
 const ACTIVE_DATE_KEY  = 'st_active_date';
 const HISTORY_MODE_KEY = 'st_history_mode';
 const BEST_DAY_KEY     = 'st_best_day';
+const COMPACT_KEY      = 'st_compact';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -184,6 +185,7 @@ let activeInterval = null;
 
 // FIX 10: History mode (7 or 30 days)
 let historyDays = parseInt(safeGet(HISTORY_MODE_KEY, '7'), 10);
+let compactMode = safeGet(COMPACT_KEY, 'false') === 'true';
 
 // FIX 12: Notification tracking
 let goalNotifSent = false;
@@ -1237,6 +1239,32 @@ function setupHistoryToggles() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22b: Compact Widget Mode
+// ═══════════════════════════════════════════════════════════════════════════
+
+function toggleCompactMode() {
+  compactMode = !compactMode;
+  safeSet(COMPACT_KEY, compactMode ? 'true' : 'false');
+  applyCompactMode();
+}
+
+function applyCompactMode() {
+  var el = document.getElementById('compactContent');
+  var btn = document.getElementById('btnCompact');
+  if (!el || !btn) return;
+  if (compactMode) {
+    el.classList.add('hidden');
+    btn.innerHTML = 'DETAILS ▼';
+    btn.classList.add('compact-active');
+  } else {
+    el.classList.remove('hidden');
+    btn.innerHTML = 'COMPACT ▲';
+    btn.classList.remove('compact-active');
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1275,6 +1303,9 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     if (tabId === 'water') updateWaterUI();
   });
 });
+
+// Compact mode toggle
+document.getElementById('btnCompact').addEventListener('click', toggleCompactMode);
 
 // Step counter controls
 document.getElementById('btnStart').addEventListener('click', function() {
@@ -1404,4 +1435,5 @@ resetWaterReminder();
 checkAndUpdateBestDay();
 renderHourlyChart();
 setupHistoryToggles();
+applyCompactMode();
 startIntervals();
