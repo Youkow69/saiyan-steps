@@ -1216,19 +1216,34 @@ document.getElementById('btnWaterGoalUp').addEventListener('click', function() {
 // Copy sync code (FIX 8: now async)
 document.getElementById('btnCopy').addEventListener('click', function() {
   generateSyncCode().then(function(code) {
-    const btn = document.getElementById('btnCopy');
-    const copyFn = function(text) {
-      try { navigator.clipboard.writeText(text); return true; } catch (e) { /* ignore */ }
-      try {
-        const el = document.createElement('textarea');
-        el.value = text; el.style.cssText = 'position:fixed;opacity:0';
-        document.body.appendChild(el); el.select(); document.execCommand('copy');
-        document.body.removeChild(el); return true;
-      } catch (e) { return false; }
-    };
-    if (copyFn(code)) {
-      btn.textContent = '\u2705 Code copie !'; btn.classList.add('copied');
+    var btn = document.getElementById('btnCopy');
+    function onCopySuccess() {
+      btn.textContent = '\u2705 Code copie !';
+      btn.classList.add('copied');
       setTimeout(function() { btn.textContent = '\uD83D\uDCCB Copier le code de sync'; btn.classList.remove('copied'); }, 2500);
+    }
+    function onCopyFail() {
+      showToast('Impossible de copier le code');
+    }
+    // BUG-S3 fix: prefer navigator.clipboard.writeText with fallback
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(onCopySuccess).catch(function() {
+        try {
+          var el = document.createElement('textarea');
+          el.value = code; el.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(el); el.select(); document.execCommand('copy');
+          document.body.removeChild(el);
+          onCopySuccess();
+        } catch (e) { onCopyFail(); }
+      });
+    } else {
+      try {
+        var el = document.createElement('textarea');
+        el.value = code; el.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(el); el.select(); document.execCommand('copy');
+        document.body.removeChild(el);
+        onCopySuccess();
+      } catch (e) { onCopyFail(); }
     }
   });
 });
