@@ -154,3 +154,25 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => { if (_sbUser) cloudSyncSteps(); }, 5 * 60 * 1000);
   });
 });
+
+
+// FEAT-S15: Sync to leaderboard table
+async function syncStepsLeaderboard() {
+  if (!window._supabaseClient) return;
+  try {
+    const user = (await window._supabaseClient.auth.getUser()).data.user;
+    if (!user) return;
+    const profile = JSON.parse(localStorage.getItem('st_user_profile') || '{}');
+    const totalSteps = parseInt(localStorage.getItem('st_total_steps') || '0');
+    const streak = parseInt(localStorage.getItem('st_streak') || '0');
+
+    await window._supabaseClient.from('leaderboard').upsert({
+      user_id: user.id,
+      display_name: profile.name || user.email.split('@')[0],
+      weekly_steps: totalSteps,
+      streak: streak,
+      transformation: localStorage.getItem('st_transformation') || 'Humain',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+  } catch(e) { console.warn('Leaderboard sync error:', e); }
+}
