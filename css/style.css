@@ -90,11 +90,6 @@ body {
   background: var(--gradient-ki); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .summary-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.summary-chip {
-  font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
-  border: 1px solid var(--stroke); background: rgba(255,255,255,0.04); white-space: nowrap;
-}
-
 /* ── Tab pages ── */
 .tabs { flex: 1; overflow: hidden; position: relative; }
 .tab-page {
@@ -183,21 +178,16 @@ body {
 .ring-bg { fill: none; stroke: rgba(255,255,255,0.06); }
 .ring-fill { fill: none; stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
 .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-.step-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
 .step-count {
   font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2.2rem, 9vw, 3rem);
   color: var(--gold); line-height: 1; transition: transform 0.1s ease;
 }
 .step-count.bump { transform: scale(1.08); }
-.step-goal-sub { font-size: 0.7rem; color: var(--muted); }
-
 /* ── Stats row ── */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .stat-card { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 16px; padding: 12px 8px; text-align: center; }
 .stat-icon { font-size: 1.1rem; }
 .stat-value { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.95rem; color: var(--gold); display: block; margin: 2px 0; }
-.stat-name { font-size: clamp(0.75rem, 2vw, 0.875rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-
 /* ── Progress bar ── */
 .progress-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
 .progress-row strong { color: var(--text); }
@@ -283,9 +273,6 @@ body {
 .hbar.today-sleep { background: linear-gradient(180deg, #667eea, #764ba2); }
 .hbar.today-water { background: linear-gradient(180deg, #00d4ff, #0066cc); }
 .hbar.past { background: rgba(255,255,255,0.14); }
-.hday { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-.hval { font-size: clamp(0.75rem, 2vw, 0.875rem); color: var(--muted); }
-
 /* ── History toggle ── */
 .history-toggle-btn {
   font-size: 0.68rem;
@@ -299,11 +286,6 @@ body {
 }
 .sync-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
 .sync-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
-.sync-code-box {
-  background: rgba(0,0,0,0.4); border: 1px solid var(--stroke); border-radius: 10px;
-  padding: 10px 12px; font-family: 'Orbitron', monospace; font-size: clamp(0.75rem, 2vw, 0.875rem);
-  color: var(--gold); word-break: break-all; letter-spacing: 0.04em; min-height: 44px;
-}
 .btn-copy {
   width: 100%; padding: 11px; border: 1px solid rgba(255,200,61,0.4); border-radius: 12px;
   background: rgba(255,200,61,0.08); color: var(--gold); font-size: 0.85rem; font-weight: 700;
@@ -323,14 +305,11 @@ body {
 .sleep-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .sleep-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sleep-time-card { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 14px; padding: 12px; text-align: center; }
-.sleep-time-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
 .sleep-time-val { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: #a78bfa; }
 .sleep-detecting { font-size: 0.75rem; color: var(--muted); text-align: center; animation: pulse 2s ease-in-out infinite; }
 .sleep-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .sleep-stage { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 12px; padding: 10px 6px; text-align: center; }
 .sleep-stage-val { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: #a78bfa; }
-.sleep-stage-label { font-size: clamp(0.75rem, 2vw, 0.875rem); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
-
 /* ── Water tab ── */
 .water-big-display { text-align: center; }
 .water-ml { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2rem, 8vw, 2.8rem); color: var(--blue); line-height: 1; }
@@ -408,11 +387,6 @@ body {
 .step-flash { animation: step-flash 0.3s ease-out; }
 
 /* ── Footer ── */
-footer {
-  text-align: center; font-size: clamp(0.75rem, 2vw, 0.875rem); color: var(--muted);
-  opacity: 0.45; padding: 6px 0 10px; letter-spacing: 0.04em; flex-shrink: 0;
-}
-
 /* ── Minimum font 0.75rem fixes ── */
 .summary-chip { font-size: max(0.75rem, 0.7rem); }
 .nav-label { font-size: max(0.75rem, 0.62rem); }
@@ -428,17 +402,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
 
 
 /* ── Best Day Record ── */
-.best-day-display {
-  text-align: center;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  color: var(--gold);
-  padding: 8px 14px;
-  background: rgba(255,200,61,0.06);
-  border: 1px solid rgba(255,200,61,0.15);
-  border-radius: 12px;
-}
 .best-day-display.hidden { display: none; }
 
 
@@ -484,10 +447,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
 .cal-ring-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 1px;
-}
-.cal-ring-label {
-  font-size: clamp(0.75rem, 2vw, 0.875rem); font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--muted);
 }
 .cal-ring-text {
   font-family: 'Orbitron', monospace; font-weight: 700;
@@ -571,11 +530,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
   opacity: 0.4;
   transition: all 0.3s ease;
 }
-.badge-card.unlocked {
-  opacity: 1;
-  border-color: rgba(255,200,61,0.3);
-  background: rgba(255,200,61,0.04);
-}
 .badge-icon {
   font-size: 1.6rem;
   line-height: 1;
@@ -601,19 +555,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.challenge-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--stroke);
-  border-radius: 14px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.challenge-card.completed {
-  border-color: rgba(57,255,20,0.3);
-  background: rgba(57,255,20,0.04);
 }
 .challenge-icon {
   font-size: 1.4rem;
@@ -680,7 +621,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
 
 /* FEAT-S10: Settings Modal Fields */
 .settings-field { display: flex; flex-direction: column; gap: 4px; }
-.settings-field label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .settings-input {
   background: rgba(255,255,255,0.06);
   border: 1px solid var(--stroke);
@@ -697,28 +637,10 @@ footer { font-size: max(0.75rem, 0.65rem); }
 }
 
 /* FEAT-S13: Sleep detail rows */
-.sleep-detail-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 0.75rem;
-  border-bottom: 1px solid var(--stroke);
-}
-.sleep-detail-date {
-  min-width: 40px;
-  color: var(--muted);
-  font-weight: 700;
-}
 .sleep-detail-time {
   flex: 1;
   color: #a78bfa;
 }
-.sleep-detail-dur {
-  color: var(--muted);
-  font-size: 0.7rem;
-}
-
 /* FEAT-S14: Light theme overrides */
 .light-theme {
   --bg: #FFF8F0;
@@ -731,11 +653,8 @@ footer { font-size: max(0.75rem, 0.65rem); }
   --ring-bg: rgba(0,0,0,0.08);
 }
 .light-theme body { background: #FFF8F0; color: #1A1A1A; }
-.light-theme .card { background: #FFFFFF; border-color: #E0D5C8; }
-.light-theme .bottom-nav { background: #FFFFFF; border-top: 1px solid #E0D5C8; }
 .light-theme .bottom-nav button { color: #888; }
 .light-theme .bottom-nav button.active { color: #FF8C00; }
-.light-theme .top-bar { background: #FFF8F0; border-bottom: 1px solid #E0D5C8; }
 .light-theme .toast { background: #1A1A1A; color: #FFF8F0; }
 .light-theme .cal-ring-bg { stroke: rgba(0,0,0,0.06); }
 .light-theme .btn-ki {
@@ -1088,8 +1007,6 @@ footer { font-size: max(0.75rem, 0.65rem); }
   margin-bottom: 4px;
   display: block;
 }
-
-
 
 /* FEAT-S16: Responsive tablet/desktop */
 @media (min-width: 768px) {
