@@ -31,6 +31,7 @@ const CAL_GOAL_KEY     = 'st_cal_goal';
 const WEIGHT_KEY       = 'st_weight';
 const DIST_GOAL_KEY    = 'st_dist_goal';
 const DIST_MODE_KEY    = 'st_dist_mode';
+const WEEKLY_SHOWN_KEY = 'st_weekly_shown';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -1361,6 +1362,114 @@ function applyCompactMode() {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22c: Weekly Summary Modal
+// ═══════════════════════════════════════════════════════════════════════════
+
+function checkWeeklySummary() {
+  var now = new Date();
+  // Only show on Monday (day 1)
+  if (now.getDay() !== 1) return;
+
+  var today = todayIso();
+  var lastShown = safeGet(WEEKLY_SHOWN_KEY, '');
+  if (lastShown === today) return;
+
+  // Calculate last week's data (Monday to Sunday)
+  var stepsH = getHistory(STEPS_KEY);
+  var sleepH = getHistory(SLEEP_KEY);
+  var waterH = getHistory(WATER_KEY);
+
+  // Last week = 7 days ending yesterday
+  var thisWeekDays = [];
+  var prevWeekDays = [];
+  for (var i = 1; i <= 7; i++) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    thisWeekDays.push(dateToIso(d));
+  }
+  for (var i = 8; i <= 14; i++) {
+    var d2 = new Date();
+    d2.setDate(d2.getDate() - i);
+    prevWeekDays.push(dateToIso(d2));
+  }
+
+  // Calculate stats for this week
+  var totalSteps = 0;
+  var bestDay = { steps: 0, date: '' };
+  var worstDay = { steps: Infinity, date: '' };
+  var goalsAchieved = 0;
+  var totalSleep = 0;
+  var sleepCount = 0;
+  var totalWater = 0;
+  var waterCount2 = 0;
+
+  thisWeekDays.forEach(function(day) {
+    var s = stepsH[day] || 0;
+    totalSteps += s;
+    if (s > bestDay.steps) { bestDay.steps = s; bestDay.date = day; }
+    if (s < worstDay.steps) { worstDay.steps = s; worstDay.date = day; }
+    if (s >= dailyGoal) goalsAchieved++;
+    var sl = sleepH[day] || 0;
+    if (sl > 0) { totalSleep += sl; sleepCount++; }
+    var w = waterH[day] || 0;
+    if (w > 0) { totalWater += w; waterCount2++; }
+  });
+
+  if (worstDay.steps === Infinity) worstDay.steps = 0;
+
+  var avgSteps = Math.round(totalSteps / 7);
+  var avgSleep = sleepCount > 0 ? (totalSleep / sleepCount).toFixed(1) : '?';
+  var avgWater = waterCount2 > 0 ? (totalWater / waterCount2).toFixed(1) : '?';
+
+  // Previous week total
+  var prevTotal = 0;
+  prevWeekDays.forEach(function(day) { prevTotal += stepsH[day] || 0; });
+  var diff = prevTotal > 0 ? Math.round(((totalSteps - prevTotal) / prevTotal) * 100) : 0;
+  var diffSign = diff >= 0 ? '+' : '';
+  var diffColor = diff >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Format dates
+  function fmtDate(iso) {
+    if (!iso) return '?';
+    try {
+      var parts = iso.split('-');
+      var months = ['jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
+      return parseInt(parts[2], 10) + ' ' + months[parseInt(parts[1], 10) - 1];
+    } catch(e) { return iso; }
+  }
+
+  // Current transformation
+  var transfo = getCurrentTransformation(getTotalAllTimeSteps());
+
+  // Build modal
+  var modal = document.getElementById('weeklyModal');
+  if (!modal) return;
+
+  var body = document.getElementById('weeklyModalBody');
+  if (!body) return;
+
+  body.innerHTML =
+    '<div style="font-size:2rem;margin-bottom:8px">📊</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:12px">' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + fmtNum(totalSteps) + '</div><div class="weekly-stat-lbl">Pas total</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + fmtNum(avgSteps) + '</div><div class="weekly-stat-lbl">Moy/jour</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val" style="color:' + diffColor + '">' + diffSign + diff + '%</div><div class="weekly-stat-lbl">vs sem. prec.</div></div>' +
+      '<div class="weekly-stat"><div class="weekly-stat-val">' + goalsAchieved + '/7</div><div class="weekly-stat-lbl">Objectifs</div></div>' +
+    '</div>' +
+    '<div style="font-size:0.78rem;color:var(--muted);line-height:1.8;text-align:left">' +
+      'Meilleur jour : <strong style="color:var(--green)">' + fmtNum(bestDay.steps) + ' pas</strong> (' + fmtDate(bestDay.date) + ')<br>' +
+      'Pire jour : <strong style="color:var(--red)">' + fmtNum(worstDay.steps) + ' pas</strong> (' + fmtDate(worstDay.date) + ')<br>' +
+      'Sommeil moy : <strong style="color:#a78bfa">' + avgSleep + 'h</strong><br>' +
+      'Hydratation moy : <strong style="color:var(--blue)">' + avgWater + ' verres</strong><br>' +
+      'Transformation : <strong style="color:var(--gold)">' + transfo.emoji + ' ' + transfo.name + '</strong>' +
+    '</div>';
+
+  modal.classList.remove('hidden');
+  safeSet(WEEKLY_SHOWN_KEY, today);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1439,6 +1548,11 @@ document.getElementById('btnWeightUp').addEventListener('click', function() {
   document.getElementById('weightDisplay').textContent = userWeight + ' kg';
   updateCalorieRing();
   updateStepsUI();
+});
+
+// Weekly summary modal close
+document.getElementById('btnCloseWeekly').addEventListener('click', function() {
+  document.getElementById('weeklyModal').classList.add('hidden');
 });
 
 // Compact mode toggle
@@ -1542,6 +1656,7 @@ document.addEventListener('visibilitychange', function() {
   } else {
     checkMidnightReset();
     startIntervals();
+setTimeout(checkWeeklySummary, 1500);
   }
 });
 
@@ -1578,3 +1693,4 @@ renderHourlyChart();
 setupHistoryToggles();
 applyCompactMode();
 startIntervals();
+setTimeout(checkWeeklySummary, 1500);
