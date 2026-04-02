@@ -164,6 +164,7 @@ let lastStepTime   = 0;
 let activeStart    = null;
 let totalActiveMs  = 0;
 let motionGranted  = false;
+let motionListenerActive = false;
 
 let sleepMode       = false;
 let sleepStart      = null;
@@ -797,6 +798,7 @@ function persistRunningState() {
 }
 
 function startSteps() {
+  if (motionListenerActive) return;
   if (typeof DeviceMotionEvent !== 'undefined' &&
       typeof DeviceMotionEvent.requestPermission === 'function' &&
       !motionGranted) {
@@ -810,6 +812,7 @@ function startSteps() {
   isRunning = true;
   activeStart = Date.now();
   window.addEventListener('devicemotion', handleMotion);
+  motionListenerActive = true;
 
   const btn = document.getElementById('btnStart');
   btn.textContent = 'ARRETER';
@@ -827,6 +830,7 @@ function stopSteps() {
   isRunning = false;
   if (activeStart) { totalActiveMs += Date.now() - activeStart; activeStart = null; }
   window.removeEventListener('devicemotion', handleMotion);
+  motionListenerActive = false;
 
   const btn = document.getElementById('btnStart');
   btn.textContent = 'DEMARRER';
