@@ -80,6 +80,25 @@
       </div>
     </div>
 
+    <div class="cal-ring-wrap">
+      <svg class="cal-ring-svg" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="calRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#FF4444"/>
+            <stop offset="100%" stop-color="#FF8C00"/>
+          </linearGradient>
+        </defs>
+        <circle class="cal-ring-bg" cx="50" cy="50" r="33" stroke-width="8"/>
+        <circle class="cal-ring-fill" id="calRingFill" cx="50" cy="50" r="33" stroke-width="8"
+          stroke-dasharray="207.35" stroke-dashoffset="207.35"/>
+      </svg>
+      <div class="cal-ring-center">
+        <span class="cal-ring-label">Energie Ki brulee</span>
+        <span class="cal-ring-text" id="calRingText">0 kcal</span>
+        <span class="cal-ring-goal" id="calGoalDisp">/ 300 kcal</span>
+      </div>
+    </div>
+
     <div>
       <div class="progress-row"><span>Progression</span><strong id="progressPct">0%</strong></div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;background:var(--gradient-ki)"></div></div>
@@ -108,6 +127,25 @@
         <button id="btnGoalDown" aria-label="Diminuer l'objectif de pas">−</button>
         <span class="goal-val" id="goalDisplay">10 000</span>
         <button id="btnGoalUp" aria-label="Augmenter l'objectif de pas">+</button>
+      </div>
+    </div>
+
+
+    <div class="goal-row">
+      <span class="goal-label">Objectif kcal</span>
+      <div class="goal-ctrl">
+        <button id="btnCalGoalDown" aria-label="Diminuer l'objectif calories">−</button>
+        <span class="goal-val" id="calGoalDisplay">300</span>
+        <button id="btnCalGoalUp" aria-label="Augmenter l'objectif calories">+</button>
+      </div>
+    </div>
+
+    <div class="goal-row">
+      <span class="goal-label">Poids</span>
+      <div class="goal-ctrl">
+        <button id="btnWeightDown" aria-label="Diminuer le poids">−</button>
+        <span class="goal-val" id="weightDisplay">70 kg</span>
+        <button id="btnWeightUp" aria-label="Augmenter le poids">+</button>
       </div>
     </div>
 
