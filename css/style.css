@@ -60,7 +60,7 @@ body {
 
 /* ── Permission overlay ── */
 .perm-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 200;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 100;
   display: flex; align-items: center; justify-content: center; padding: 24px;
 }
 .perm-overlay.hidden { display: none; }
@@ -196,7 +196,7 @@ body {
 .stat-card { background: var(--bg-card); border: 1px solid var(--stroke); border-radius: 16px; padding: 12px 8px; text-align: center; }
 .stat-icon { font-size: 1.1rem; }
 .stat-value { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.95rem; color: var(--gold); display: block; margin: 2px 0; }
-.stat-name { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stat-name { font-size: clamp(0.75rem, 2vw, 0.875rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
 
 /* ── Progress bar ── */
 .progress-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
@@ -284,7 +284,7 @@ body {
 .hbar.today-water { background: linear-gradient(180deg, #00d4ff, #0066cc); }
 .hbar.past { background: rgba(255,255,255,0.14); }
 .hday { font-size: 0.52rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-.hval { font-size: 0.5rem; color: var(--muted); }
+.hval { font-size: clamp(0.75rem, 2vw, 0.875rem); color: var(--muted); }
 
 /* ── History toggle ── */
 .history-toggle-btn {
@@ -301,7 +301,7 @@ body {
 .sync-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
 .sync-code-box {
   background: rgba(0,0,0,0.4); border: 1px solid var(--stroke); border-radius: 10px;
-  padding: 10px 12px; font-family: 'Orbitron', monospace; font-size: 0.6rem;
+  padding: 10px 12px; font-family: 'Orbitron', monospace; font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: var(--gold); word-break: break-all; letter-spacing: 0.04em; min-height: 44px;
 }
 .btn-copy {
@@ -329,7 +329,7 @@ body {
 .sleep-stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .sleep-stage { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 12px; padding: 10px 6px; text-align: center; }
 .sleep-stage-val { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: #a78bfa; }
-.sleep-stage-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
+.sleep-stage-label { font-size: clamp(0.75rem, 2vw, 0.875rem); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 2px; }
 
 /* ── Water tab ── */
 .water-big-display { text-align: center; }
@@ -409,7 +409,7 @@ body {
 
 /* ── Footer ── */
 footer {
-  text-align: center; font-size: 0.65rem; color: var(--muted);
+  text-align: center; font-size: clamp(0.75rem, 2vw, 0.875rem); color: var(--muted);
   opacity: 0.45; padding: 6px 0 10px; letter-spacing: 0.04em; flex-shrink: 0;
 }
 
@@ -486,7 +486,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   align-items: center; justify-content: center; gap: 1px;
 }
 .cal-ring-label {
-  font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+  font-size: clamp(0.75rem, 2vw, 0.875rem); font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.1em; color: var(--muted);
 }
 .cal-ring-text {
@@ -494,7 +494,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   font-size: clamp(0.9rem, 4vw, 1.2rem); color: var(--red); line-height: 1;
 }
 .cal-ring-goal {
-  font-size: 0.6rem; color: var(--muted);
+  font-size: clamp(0.75rem, 2vw, 0.875rem); color: var(--muted);
 }
 
 
@@ -547,7 +547,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   color: var(--gold);
 }
 .weekly-stat-lbl {
-  font-size: 0.65rem;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -583,14 +583,14 @@ footer { font-size: max(0.75rem, 0.65rem); }
 }
 .badge-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.6rem;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   font-weight: 700;
   color: var(--gold);
   letter-spacing: 0.04em;
   margin-bottom: 2px;
 }
 .badge-desc {
-  font-size: 0.55rem;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: var(--muted);
   line-height: 1.3;
 }
@@ -645,7 +645,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   transition: width 0.5s ease;
 }
 .challenge-progress-text {
-  font-size: 0.65rem;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
   color: var(--muted);
   font-weight: 700;
 }
@@ -760,7 +760,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
 .transform-overlay {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 250;
   background: rgba(0,0,0,0.95);
   display: flex;
   align-items: center;
@@ -837,4 +837,51 @@ footer { font-size: max(0.75rem, 0.65rem); }
   color: var(--gold);
   font-family: 'Orbitron', sans-serif;
   font-size: 0.78rem;
+}
+
+
+/* BUG-S8: Respect prefers-reduced-motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* BUG-S4: 30-day histogram improvements */
+.hist-bar-wrapper {
+  position: relative;
+}
+.hist-bar-wrapper .hist-label-30 {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  font-size: clamp(0.6rem, 1.5vw, 0.7rem);
+  color: var(--text-secondary, #a0a8c0);
+  white-space: nowrap;
+  transform-origin: center;
+}
+.hist-tooltip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.9);
+  color: #f0f4ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+.hist-bar-wrapper:hover .hist-tooltip,
+.hist-bar-wrapper:active .hist-tooltip {
+  opacity: 1;
 }
