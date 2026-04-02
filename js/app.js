@@ -34,6 +34,12 @@ const DIST_MODE_KEY    = 'st_dist_mode';
 const WEEKLY_SHOWN_KEY = 'st_weekly_shown';
 const BADGES_KEY       = 'st_badges';
 const CHALLENGES_KEY   = 'st_challenges';
+const MOVE_REMIND_KEY  = 'st_last_move_remind';
+const USER_PROFILE_KEY = 'st_user_profile';
+const SLEEP_GOAL_KEY   = 'st_sleep_goal';
+const SLEEP_DETAIL_KEY = 'st_sleep_detail';
+const THEME_KEY        = 'st_theme';
+const FRIENDS_CODE_KEY = 'st_friends_code';
 
 // Named constants — no magic numbers
 const STEP_TO_KM         = 0.00075;
@@ -56,6 +62,11 @@ const GOAL_MAX           = 50000;
 const WATER_GOAL_STEP    = 2;
 const WATER_GOAL_MIN     = 4;
 const WATER_GOAL_MAX     = 20;
+
+// FEAT-S12: Sleep goal bounds
+const SLEEP_GOAL_MIN     = 5;
+const SLEEP_GOAL_MAX     = 10;
+const SLEEP_GOAL_STEP    = 0.5;
 
 // Transformation levels — total all-time steps
 const TRANSFORMATIONS = [
@@ -199,6 +210,17 @@ let userWeight = parseInt(safeGet(WEIGHT_KEY, '70'), 10);
 let distGoal = parseFloat(safeGet(DIST_GOAL_KEY, '5'));
 let distanceMode = safeGet(DIST_MODE_KEY, 'false') === 'true';
 
+// FEAT-S10: User profile
+let userProfile = (function() {
+  try { return JSON.parse(safeGet(USER_PROFILE_KEY, 'null')); } catch(e) { return null; }
+})();
+
+// FEAT-S12: Sleep goal
+let sleepGoalH = parseFloat(safeGet(SLEEP_GOAL_KEY, '8'));
+
+// FEAT-S14: Theme
+let lightTheme = safeGet(THEME_KEY, 'false') === 'true';
+
 // FIX 12: Notification tracking
 let goalNotifSent = false;
 let lastTransformName = '';
@@ -307,6 +329,8 @@ function updateTransformationUI() {
   // FIX 12: Notify on new transformation
   if (lastTransformName && lastTransformName !== current.name) {
     sendNotif('Nouvelle transformation !', current.emoji + ' ' + current.name + ' atteint !');
+    // FEAT-S15: Show fullscreen transformation animation
+    showTransformationAnimation(current.name, current.emoji);
   }
   lastTransformName = current.name;
 }
@@ -408,12 +432,14 @@ function showConfetti() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function calculateCalories() {
-  // Calories = steps * weight factor + active duration factor
-  var stepCal = stepCount * (userWeight * 0.00057);
+  // FEAT-S10: Use profile weight if available, else fallback to userWeight
+  var w = (userProfile && userProfile.weight) ? userProfile.weight : userWeight;
+  // Calories = steps * (0.04 * weight / 70) per spec
+  var stepCal = stepCount * (0.04 * w / 70);
   var ams = totalActiveMs;
   if (isRunning && activeStart) ams += Date.now() - activeStart;
   var activeMinutes = ams / 60000;
-  var activeCal = activeMinutes * (userWeight * 0.05);
+  var activeCal = activeMinutes * (w * 0.05);
   return Math.round(stepCal + activeCal);
 }
 
@@ -669,7 +695,7 @@ function updateSleepUI() {
   document.getElementById('sleepNights').textContent = nights;
   if (todaySleep > 0) {
     document.getElementById('sleepTotal').textContent = todaySleep.toFixed(1) + 'h';
-    const score = Math.min(100, Math.round((todaySleep / SLEEP_PERFECT_H) * 100));
+    const score = Math.min(100, Math.round((todaySleep / sleepGoalH) * 100));
     document.getElementById('sleepScore').textContent = score + '%';
   } else {
     const lastNight = vals.length > 0 ? vals[vals.length - 1] : 0;
@@ -679,6 +705,7 @@ function updateSleepUI() {
 
   updateTopBar();
   renderSleepHistory();
+  renderSleepDetailHistory();
 }
 
 function renderSleepHistory() {
@@ -1209,6 +1236,16 @@ function deactivateSleepMode() {
     const h = getHistory(SLEEP_KEY);
     h[sleepDate] = parseFloat(durationHours.toFixed(2));
     setHistory(SLEEP_KEY, h);
+
+    // FEAT-S13: Store detailed sleep entry (bedtime, waketime)
+    var detailH = getHistory(SLEEP_DETAIL_KEY);
+    detailH[sleepDate] = {
+      bed: sleepStart,
+      wake: wakeTime,
+      durationH: parseFloat(durationHours.toFixed(2)),
+      score: Math.min(100, Math.round((durationHours / sleepGoalH) * 100))
+    };
+    setHistory(SLEEP_DETAIL_KEY, detailH);
   }
 
   saveSleepSession({ active: false, start: sleepStart, end: wakeTime, confirmed: sleepConfirmed });
@@ -1391,6 +1428,8 @@ function updateActiveMinutes() {
   if (sleepMode && sleepConfirmed) updateSleepUI();
   // FIX 12: Check streak danger at 18h+
   checkStreakDanger();
+  // FEAT-S9: Activity reminder check
+  checkActivityReminder();
 }
 
 function startIntervals() {
@@ -1849,6 +1888,469 @@ function renderChallenges() {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22f: FEAT-S9 — Activity Reminders (every 2h, 8h-20h)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function checkActivityReminder() {
+  var now = new Date();
+  var hour = now.getHours();
+  if (hour < 8 || hour > 20) return;
+
+  var lastRemind = parseInt(safeGet(MOVE_REMIND_KEY, '0'), 10);
+  if (Date.now() - lastRemind < 2 * 3600 * 1000) return;
+
+  // Check if steps were counted in the last hour
+  var hourlyKey = 'st_hourly_' + todayIso();
+  var hourly = JSON.parse(safeGet(hourlyKey, '{}'));
+  var lastHourSteps = hourly[hour] || 0;
+  var prevHourSteps = hourly[hour - 1] || 0;
+
+  if (lastHourSteps === 0 && prevHourSteps === 0) {
+    sendNotif('Hey guerrier !', 'Tu es immobile depuis trop longtemps. Bouge pour maintenir ton ki !');
+    safeSet(MOVE_REMIND_KEY, Date.now().toString());
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22g: FEAT-S10 — User Profile Settings
+// ═══════════════════════════════════════════════════════════════════════════
+
+function getUserProfile() {
+  if (!userProfile) return { weight: 70, height: 175, age: 30, sex: 'M' };
+  return userProfile;
+}
+
+function saveUserProfile(profile) {
+  userProfile = profile;
+  safeSet(USER_PROFILE_KEY, JSON.stringify(profile));
+}
+
+function openSettingsModal() {
+  var modal = document.getElementById('settingsModal');
+  if (!modal) return;
+  var p = getUserProfile();
+  document.getElementById('profileWeight').value = p.weight;
+  document.getElementById('profileHeight').value = p.height;
+  document.getElementById('profileAge').value = p.age;
+  document.getElementById('profileSex').value = p.sex;
+  document.getElementById('sleepGoalInput').value = sleepGoalH;
+  document.getElementById('themeToggle').checked = lightTheme;
+  modal.classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.add('hidden');
+}
+
+function saveSettingsFromModal() {
+  var w = parseInt(document.getElementById('profileWeight').value, 10);
+  var h = parseInt(document.getElementById('profileHeight').value, 10);
+  var a = parseInt(document.getElementById('profileAge').value, 10);
+  var s = document.getElementById('profileSex').value;
+
+  if (isNaN(w) || w < 20 || w > 300) { showToast('Poids invalide (20-300 kg)'); return; }
+  if (isNaN(h) || h < 100 || h > 250) { showToast('Taille invalide (100-250 cm)'); return; }
+  if (isNaN(a) || a < 5 || a > 120) { showToast('Age invalide (5-120)'); return; }
+
+  saveUserProfile({ weight: w, height: h, age: a, sex: s });
+
+  // Also update legacy weight
+  userWeight = w;
+  safeSet(WEIGHT_KEY, w.toString());
+  if (document.getElementById('weightDisplay')) document.getElementById('weightDisplay').textContent = w + ' kg';
+
+  // FEAT-S12: Save sleep goal
+  var sg = parseFloat(document.getElementById('sleepGoalInput').value);
+  if (!isNaN(sg) && sg >= SLEEP_GOAL_MIN && sg <= SLEEP_GOAL_MAX) {
+    sleepGoalH = sg;
+    safeSet(SLEEP_GOAL_KEY, sg.toString());
+  }
+
+  // FEAT-S14: Save theme
+  var newTheme = document.getElementById('themeToggle').checked;
+  if (newTheme !== lightTheme) {
+    lightTheme = newTheme;
+    safeSet(THEME_KEY, lightTheme ? 'true' : 'false');
+    applyTheme();
+  }
+
+  updateCalorieRing();
+  updateStepsUI();
+  updateSleepUI();
+  closeSettingsModal();
+  showToast('Profil sauvegarde !');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22h: FEAT-S11 — Data Export (CSV/JSON)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function exportDataJSON() {
+  var stepsH = getHistory(STEPS_KEY);
+  var sleepH = getHistory(SLEEP_KEY);
+  var waterH = getHistory(WATER_KEY);
+  var detailH = getHistory(SLEEP_DETAIL_KEY);
+
+  var allDates = new Set();
+  Object.keys(stepsH).forEach(function(k) { allDates.add(k); });
+  Object.keys(sleepH).forEach(function(k) { allDates.add(k); });
+  Object.keys(waterH).forEach(function(k) { allDates.add(k); });
+
+  var sorted = Array.from(allDates).sort();
+  var rows = sorted.map(function(date) {
+    var detail = detailH[date] || {};
+    return {
+      date: date,
+      steps: stepsH[date] || 0,
+      sleep_hours: sleepH[date] || 0,
+      water_glasses: waterH[date] || 0,
+      bedtime: detail.bed ? new Date(detail.bed).toISOString() : null,
+      waketime: detail.wake ? new Date(detail.wake).toISOString() : null,
+      sleep_score: detail.score || null
+    };
+  });
+
+  var blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, 'saiyan-steps-export.json');
+}
+
+function exportDataCSV() {
+  var stepsH = getHistory(STEPS_KEY);
+  var sleepH = getHistory(SLEEP_KEY);
+  var waterH = getHistory(WATER_KEY);
+  var detailH = getHistory(SLEEP_DETAIL_KEY);
+
+  var allDates = new Set();
+  Object.keys(stepsH).forEach(function(k) { allDates.add(k); });
+  Object.keys(sleepH).forEach(function(k) { allDates.add(k); });
+  Object.keys(waterH).forEach(function(k) { allDates.add(k); });
+
+  var sorted = Array.from(allDates).sort();
+  var lines = ['date,steps,sleep_hours,water_glasses,bedtime,waketime,sleep_score'];
+  sorted.forEach(function(date) {
+    var detail = detailH[date] || {};
+    lines.push([
+      date,
+      stepsH[date] || 0,
+      sleepH[date] || 0,
+      waterH[date] || 0,
+      detail.bed ? new Date(detail.bed).toISOString() : '',
+      detail.wake ? new Date(detail.wake).toISOString() : '',
+      detail.score || ''
+    ].join(','));
+  });
+
+  var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  downloadBlob(blob, 'saiyan-steps-export.csv');
+}
+
+function downloadBlob(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22i: FEAT-S13 — Detailed Sleep History Display
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderSleepDetailHistory() {
+  var container = document.getElementById('sleepDetailHistory');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var detailH = getHistory(SLEEP_DETAIL_KEY);
+  var numDays = historyDays;
+  var days = [];
+  for (var i = numDays - 1; i >= 0; i--) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(dateToIso(d));
+  }
+
+  // Render detail entries
+  var hasData = false;
+  days.forEach(function(day) {
+    var entry = detailH[day];
+    if (!entry) return;
+    hasData = true;
+
+    var bedDate = new Date(entry.bed);
+    var wakeDate = new Date(entry.wake);
+    var bedStr = bedDate.getHours() + 'h' + (bedDate.getMinutes() < 10 ? '0' : '') + bedDate.getMinutes();
+    var wakeStr = wakeDate.getHours() + 'h' + (wakeDate.getMinutes() < 10 ? '0' : '') + wakeDate.getMinutes();
+    var durH = Math.floor(entry.durationH);
+    var durM = Math.round((entry.durationH - durH) * 60);
+    var durStr = durH + 'h' + (durM < 10 ? '0' : '') + durM;
+
+    var row = document.createElement('div');
+    row.className = 'sleep-detail-row';
+    row.innerHTML = '<span class="sleep-detail-date">' + day.slice(5) + '</span>' +
+      '<span class="sleep-detail-time">' + bedStr + ' \u2192 ' + wakeStr + '</span>' +
+      '<span class="sleep-detail-dur">(' + durStr + ', score: ' + entry.score + '%)</span>';
+    container.appendChild(row);
+  });
+
+  if (!hasData) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;text-align:center;padding:12px">Aucune donnee detaillee de sommeil</div>';
+  }
+
+  // FEAT-S13: Horizontal bar chart for sleep patterns
+  renderSleepPatternChart(days, detailH);
+}
+
+function renderSleepPatternChart(days, detailH) {
+  var container = document.getElementById('sleepPatternChart');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var maxH = sleepGoalH + 2;
+  days.forEach(function(day) {
+    var entry = detailH[day];
+    var val = entry ? entry.durationH : 0;
+    var pct = Math.min(100, Math.round((val / maxH) * 100));
+    var isGoal = val >= sleepGoalH;
+
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.65rem';
+
+    var label = document.createElement('span');
+    label.style.cssText = 'min-width:32px;text-align:right;color:var(--muted)';
+    label.textContent = day.slice(5);
+
+    var barWrap = document.createElement('div');
+    barWrap.style.cssText = 'flex:1;height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden';
+
+    var barFill = document.createElement('div');
+    barFill.style.cssText = 'height:100%;border-radius:5px;transition:width 0.3s;width:' + (val > 0 ? Math.max(3, pct) : 0) + '%;background:' + (isGoal ? 'var(--gradient-sleep)' : 'rgba(102,126,234,0.4)');
+
+    var valLabel = document.createElement('span');
+    valLabel.style.cssText = 'min-width:36px;color:' + (isGoal ? '#a78bfa' : 'var(--muted)');
+    valLabel.textContent = val > 0 ? val.toFixed(1) + 'h' : '\u2014';
+
+    barWrap.appendChild(barFill);
+    row.appendChild(label);
+    row.appendChild(barWrap);
+    row.appendChild(valLabel);
+    container.appendChild(row);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22j: FEAT-S14 — Light Theme Mode
+// ═══════════════════════════════════════════════════════════════════════════
+
+function applyTheme() {
+  var root = document.documentElement;
+  if (lightTheme) {
+    root.style.setProperty('--bg', '#f5f5f5');
+    root.style.setProperty('--bg-card', '#ffffff');
+    root.style.setProperty('--stroke', 'rgba(0,0,0,0.08)');
+    root.style.setProperty('--text', '#1a1a2e');
+    root.style.setProperty('--muted', '#6b7280');
+    root.style.setProperty('--gold', '#FF8C00');
+    root.style.setProperty('--orange', '#FF6B00');
+    document.body.classList.add('light-theme');
+  } else {
+    root.style.setProperty('--bg', '#0a0a0f');
+    root.style.setProperty('--bg-card', '#12151f');
+    root.style.setProperty('--stroke', 'rgba(255,255,255,0.07)');
+    root.style.setProperty('--text', '#f0f4ff');
+    root.style.setProperty('--muted', '#94a3c0');
+    root.style.setProperty('--gold', '#FFD700');
+    root.style.setProperty('--orange', '#FF8C00');
+    document.body.classList.remove('light-theme');
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22k: FEAT-S15 — Transformation Animations
+// ═══════════════════════════════════════════════════════════════════════════
+
+function showTransformationAnimation(transformName, emoji) {
+  var overlay = document.getElementById('transformOverlay');
+  if (!overlay) return;
+
+  var nameEl = document.getElementById('transformAnimName');
+  var emojiEl = document.getElementById('transformAnimEmoji');
+  if (nameEl) nameEl.textContent = transformName;
+  if (emojiEl) emojiEl.textContent = emoji;
+
+  overlay.classList.remove('hidden');
+
+  // Spawn golden particles
+  spawnGoldenParticles();
+
+  // Flash effect
+  overlay.style.animation = 'transformFlash 0.3s ease-out';
+
+  setTimeout(function() {
+    overlay.classList.add('hidden');
+    overlay.style.animation = '';
+  }, 3000);
+}
+
+function spawnGoldenParticles() {
+  var canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  var ctx = canvas.getContext('2d');
+  var particles = [];
+  var colors = ['#FFD700', '#FFAA00', '#FF8C00', '#FFF8DC', '#FFE4B5'];
+
+  for (var i = 0; i < 120; i++) {
+    var angle = Math.random() * Math.PI * 2;
+    var speed = Math.random() * 4 + 1;
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      size: Math.random() * 4 + 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      decay: 0.005 + Math.random() * 0.01
+    });
+  }
+
+  var frames = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var alive = false;
+    particles.forEach(function(p) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.alpha -= p.decay;
+      if (p.alpha <= 0) return;
+      alive = true;
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    frames++;
+    if (alive && frames < 180) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'none';
+    }
+  }
+  animate();
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 22l: FEAT-S16 — Friends Leaderboard (Supabase)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function generateFriendCode() {
+  var code = safeGet(FRIENDS_CODE_KEY, '');
+  if (!code) {
+    code = 'SAI-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    safeSet(FRIENDS_CODE_KEY, code);
+  }
+  return code;
+}
+
+async function syncToLeaderboard() {
+  if (typeof getSbClient !== 'function') return;
+  var sb = getSbClient();
+  if (!sb || !_sbUser) return;
+
+  var friendCode = generateFriendCode();
+  var today = todayIso();
+
+  // Get weekly steps total
+  var stepsH = getHistory(STEPS_KEY);
+  var weekTotal = 0;
+  for (var i = 0; i < 7; i++) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    var iso = dateToIso(d);
+    weekTotal += stepsH[iso] || 0;
+  }
+
+  try {
+    await sb.from('steps_leaderboard').upsert({
+      user_id: _sbUser.id,
+      friend_code: friendCode,
+      display_name: _sbUser.email ? _sbUser.email.split('@')[0] : 'Guerrier',
+      week_steps: weekTotal,
+      today_steps: stepCount,
+      transformation: getCurrentTransformation(getTotalAllTimeSteps()).name,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch(e) { /* ignore sync errors */ }
+}
+
+async function loadLeaderboard() {
+  var container = document.getElementById('leaderboardList');
+  if (!container) return;
+
+  if (typeof getSbClient !== 'function') {
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Connecte-toi pour voir le classement</div>';
+    return;
+  }
+
+  var sb = getSbClient();
+  if (!sb || !_sbUser) {
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Connecte-toi pour voir le classement</div>';
+    return;
+  }
+
+  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Chargement...</div>';
+
+  try {
+    var { data, error } = await sb.from('steps_leaderboard')
+      .select('*')
+      .order('week_steps', { ascending: false })
+      .limit(20);
+
+    if (error || !data) {
+      container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Erreur de chargement</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    if (data.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Aucun participant pour le moment</div>';
+      return;
+    }
+
+    data.forEach(function(entry, idx) {
+      var medal = idx === 0 ? '\uD83E\uDD47' : idx === 1 ? '\uD83E\uDD48' : idx === 2 ? '\uD83E\uDD49' : (idx + 1) + '.';
+      var isMe = entry.user_id === _sbUser.id;
+      var row = document.createElement('div');
+      row.className = 'leaderboard-row' + (isMe ? ' leaderboard-me' : '');
+      row.innerHTML = '<span class="lb-rank">' + medal + '</span>' +
+        '<span class="lb-name">' + (entry.display_name || 'Guerrier') + '</span>' +
+        '<span class="lb-transform">' + (entry.transformation || '') + '</span>' +
+        '<span class="lb-steps">' + fmtNum(entry.week_steps || 0) + '</span>';
+      container.appendChild(row);
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:12px">Erreur: ' + (e.message || e) + '</div>';
+  }
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 23: Event Listeners & Init
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1884,8 +2386,9 @@ document.querySelectorAll('.nav-btn').forEach(function(btn) {
     btn.classList.add('active');
     btn.setAttribute('aria-selected', 'true');
     if (tabId === 'steps') { renderStepsHistory(); renderHourlyChart(); }
-    if (tabId === 'sleep') renderSleepHistory();
+    if (tabId === 'sleep') { renderSleepHistory(); renderSleepDetailHistory(); }
     if (tabId === 'water') updateWaterUI();
+    if (tabId === 'more') { loadLeaderboard(); }
   });
 });
 
@@ -1929,6 +2432,28 @@ document.getElementById('btnWeightUp').addEventListener('click', function() {
   updateCalorieRing();
   updateStepsUI();
 });
+
+// FEAT-S10: Settings modal
+var btnSettings = document.getElementById('btnSettings');
+if (btnSettings) btnSettings.addEventListener('click', openSettingsModal);
+var btnCloseSettings = document.getElementById('btnCloseSettings');
+if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettingsModal);
+var btnSaveSettings = document.getElementById('btnSaveSettings');
+if (btnSaveSettings) btnSaveSettings.addEventListener('click', saveSettingsFromModal);
+
+// FEAT-S11: Export buttons
+var btnExportJSON = document.getElementById('btnExportJSON');
+if (btnExportJSON) btnExportJSON.addEventListener('click', exportDataJSON);
+var btnExportCSV = document.getElementById('btnExportCSV');
+if (btnExportCSV) btnExportCSV.addEventListener('click', exportDataCSV);
+
+// FEAT-S16: Leaderboard
+var btnRefreshLB = document.getElementById('btnRefreshLeaderboard');
+if (btnRefreshLB) btnRefreshLB.addEventListener('click', function() { syncToLeaderboard().then(loadLeaderboard); });
+
+// FEAT-S14: Close transform overlay on click
+var transformOverlay = document.getElementById('transformOverlay');
+if (transformOverlay) transformOverlay.addEventListener('click', function() { transformOverlay.classList.add('hidden'); });
 
 // Weekly summary modal close
 document.getElementById('btnCloseWeekly').addEventListener('click', function() {
