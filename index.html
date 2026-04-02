@@ -58,7 +58,7 @@
       <span class="transformation-progress" id="transformProgress">50 000 pas avant Saiyan</span>
     </div>
 
-    <div class="best-day-display hidden" id="bestDayDisplay"></div>
+    <div class="best-day-display hidden" id="bestDayDisplay">🏆 Record : 0 pas</div>
 
     <div class="ring-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="10000" aria-label="Progression pas quotidiens" id="ringWrap">
       <svg class="ring-svg" viewBox="0 0 100 100">
@@ -93,7 +93,7 @@
           stroke-dasharray="207.35" stroke-dashoffset="207.35"/>
       </svg>
       <div class="cal-ring-center">
-        <span class="cal-ring-label">Energie Ki brulee</span>
+        <span class="cal-ring-label">🔥 Ki brûlé</span>
         <span class="cal-ring-text" id="calRingText">0 kcal</span>
         <span class="cal-ring-goal" id="calGoalDisp">/ 300 kcal</span>
       </div>
@@ -319,6 +319,26 @@
   <!-- PLUS/SETTINGS TAB -->
   <div class="tab-page" id="tab-more" role="tabpanel" aria-labelledby="nav-more">
 
+
+    <!-- FEAT-S2: Badges & Achievements -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">🏅 <span>Badges du Guerrier</span></div>
+      <div class="badges-grid" id="badgesGrid"></div>
+    </div>
+
+    <!-- FEAT-S1: Solo Challenges DBZ -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">⚡ <span>Challenges Solo DBZ</span></div>
+      <div class="challenges-grid" id="challengesGrid"></div>
+    </div>
+
+    <!-- FEAT-S4: Weekly Reports History -->
+    <div class="card" style="padding:16px">
+      <div class="card-title">📊 <span>Rapports Hebdomadaires</span></div>
+      <div id="weeklyReportsContainer" style="display:flex;flex-direction:column;gap:6px"></div>
+      <button class="btn-ki" id="btnViewWeeklyReports" style="width:100%;margin-top:10px;font-size:0.82rem">📃 Voir les anciens rapports</button>
+    </div>
+
     <!-- FEAT-S10: Settings button -->
     <div class="card" style="text-align:center;padding:20px">
       <div style="font-size:2rem;margin-bottom:8px">⚙️</div>
@@ -415,6 +435,20 @@
       <label>Objectif sommeil (heures) — min 5h, max 10h</label>
       <input type="number" id="sleepGoalInput" min="5" max="10" step="0.5" value="8" class="settings-input" style="width:100%">
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="settings-field">
+        <label>Obj. pas</label>
+        <input type="number" id="profileStepGoal" min="1000" max="50000" step="1000" value="10000" class="settings-input">
+      </div>
+      <div class="settings-field">
+        <label>Obj. kcal</label>
+        <input type="number" id="profileCalGoal" min="100" max="2000" step="50" value="300" class="settings-input">
+      </div>
+      <div class="settings-field">
+        <label>Obj. km</label>
+        <input type="number" id="profileDistGoal" min="1" max="50" step="0.5" value="5" class="settings-input">
+      </div>
+    </div>
     <div class="settings-field" style="margin-bottom:16px;display:flex;align-items:center;gap:10px">
       <label for="themeToggle">Mode clair</label>
       <input type="checkbox" id="themeToggle" style="width:20px;height:20px">
@@ -423,6 +457,7 @@
       <button class="btn-ki" id="btnSaveSettings" style="flex:1">SAUVEGARDER</button>
       <button class="btn-reset" id="btnCloseSettings" style="flex:0 0 auto;padding:12px 18px">✕</button>
     </div>
+    <div style="text-align:center;margin-top:12px;font-size:0.7rem;color:var(--muted)">Saiyan Tracker v2.5.0</div>
   </div>
 </div>
 
