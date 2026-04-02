@@ -496,3 +496,38 @@ footer { font-size: max(0.75rem, 0.65rem); }
 .cal-ring-goal {
   font-size: 0.6rem; color: var(--muted);
 }
+
+
+/* ── Distance Stat ── */
+.dist-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dist-main-card {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dist-main-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.dist-main-value {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--gold);
+}
+.dist-main-goal {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
