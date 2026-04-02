@@ -2560,6 +2560,7 @@ document.addEventListener('visibilitychange', function() {
     stopIntervals();
   } else {
     checkMidnightReset();
+  restoreSleepSession();
     startIntervals();
 checkBadges();
 updateChallenges();
@@ -2585,6 +2586,7 @@ if ('serviceWorker' in navigator) {
 
 // ── Init ──
 checkMidnightReset();
+  restoreSleepSession();
 loadAll();
 updateStepsUI();
 updateSleepUI();
@@ -2603,3 +2605,24 @@ startIntervals();
 checkBadges();
 updateChallenges();
 setTimeout(checkWeeklySummary, 1500);
+
+// BUG-S2: Restore sleep session on reload
+function restoreSleepSession() {
+  try {
+    const session = safeGet('st_sleep_session', null);
+    if (session && (session.status === 'active' || session.status === 'confirmed')) {
+      sleepMode = true;
+      sleepStart = session.start;
+      sleepConfirmed = session.status === 'confirmed';
+      if (typeof stillnessStart === 'undefined' || !stillnessStart) {
+        stillnessStart = Date.now();
+      }
+      // Re-attach motion listener for sleep detection
+      if (typeof startListeningToMotion === 'function') {
+        startListeningToMotion();
+      }
+      showToast('Mode sommeil restaur\u00e9');
+      updateSleepUI();
+    }
+  } catch(e) { console.warn('Sleep restore failed:', e); }
+}
