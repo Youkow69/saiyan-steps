@@ -114,7 +114,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .nav-btn .nav-icon { font-size: 1.4rem; line-height: 1; }
-.nav-btn .nav-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.nav-btn .nav-label { font-size: max(0.75rem, 0.62rem); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .nav-btn.active { color: var(--gold); }
 
 /* ── Cards ── */
@@ -189,7 +189,7 @@ body {
 .stat-icon { font-size: 1.1rem; }
 .stat-value { font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.95rem; color: var(--gold); display: block; margin: 2px 0; }
 /* ── Progress bar ── */
-.progress-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; }
+.progress-row { display: flex; justify-content: space-between; font-size: max(0.75rem, 0.72rem); color: var(--muted); margin-bottom: 6px; }
 .progress-row strong { color: var(--text); }
 .progress-bar { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
 .progress-fill { height: 100%; border-radius: inherit; transition: width 0.5s ease; }
@@ -230,7 +230,7 @@ body {
 .chip-group { display: flex; gap: 6px; }
 .chip {
   padding: 5px 11px; border-radius: 999px; border: 1px solid var(--stroke);
-  background: transparent; color: var(--muted); font-size: 0.7rem; font-weight: 700;
+  background: transparent; color: var(--muted); font-size: max(0.75rem, 0.7rem); font-weight: 700;
   cursor: pointer; transition: all 0.15s ease; -webkit-tap-highlight-color: transparent;
 }
 .chip.active { border-color: rgba(255,200,61,0.6); background: rgba(255,200,61,0.12); color: var(--gold); }
@@ -238,7 +238,7 @@ body {
 
 /* ── Status pill ── */
 .status-pill {
-  display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; font-size: max(0.75rem, 0.7rem); font-weight: 700;
   letter-spacing: 0.05em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px;
   border: 1px solid var(--stroke); background: rgba(255,255,255,0.04); flex-shrink: 0;
 }
@@ -262,7 +262,7 @@ body {
   font-family: 'Orbitron', sans-serif; font-size: 0.9rem; letter-spacing: 0.06em; color: var(--gold);
 }
 .transformation-progress {
-  font-size: 0.72rem; color: var(--muted);
+  font-size: max(0.75rem, 0.72rem); color: var(--muted);
 }
 
 /* ── History bars ── */
@@ -275,7 +275,7 @@ body {
 .hbar.past { background: rgba(255,255,255,0.14); }
 /* ── History toggle ── */
 .history-toggle-btn {
-  font-size: 0.68rem;
+  font-size: max(0.75rem, 0.68rem);
   padding: 4px 10px;
 }
 
@@ -285,7 +285,7 @@ body {
   padding: 16px; display: flex; flex-direction: column; gap: 10px;
 }
 .sync-title { font-family: 'Orbitron', sans-serif; font-size: 1rem; letter-spacing: 0.06em; color: var(--gold); }
-.sync-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+.sync-desc { font-size: max(0.75rem, 0.72rem); color: var(--muted); line-height: 1.4; }
 .btn-copy {
   width: 100%; padding: 11px; border: 1px solid rgba(255,200,61,0.4); border-radius: 12px;
   background: rgba(255,200,61,0.08); color: var(--gold); font-size: 0.85rem; font-weight: 700;
@@ -302,7 +302,7 @@ body {
 }
 .sleep-icon { font-size: 3rem; line-height: 1; animation: float 3s ease-in-out infinite; }
 .sleep-big { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2rem, 8vw, 2.8rem); color: #a78bfa; line-height: 1; }
-.sleep-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.sleep-label { font-size: max(0.75rem, 0.72rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .sleep-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sleep-time-card { background: rgba(255,255,255,0.03); border: 1px solid var(--stroke); border-radius: 14px; padding: 12px; text-align: center; }
 .sleep-time-val { font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 700; color: #a78bfa; }
@@ -313,7 +313,7 @@ body {
 /* ── Water tab ── */
 .water-big-display { text-align: center; }
 .water-ml { font-family: 'Orbitron', monospace; font-weight: 700; font-size: clamp(2rem, 8vw, 2.8rem); color: var(--blue); line-height: 1; }
-.water-sublabel { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+.water-sublabel { font-size: max(0.75rem, 0.72rem); color: var(--muted); margin-top: 4px; }
 .glasses-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .glass-btn {
   aspect-ratio: 1; border: 2px solid var(--stroke); border-radius: 16px;
@@ -413,7 +413,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   border-radius: 12px;
   background: rgba(255,255,255,0.04);
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: max(0.75rem, 0.72rem);
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -474,7 +474,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   gap: 8px;
 }
 .dist-main-label {
-  font-size: 0.72rem;
+  font-size: max(0.75rem, 0.72rem);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -487,7 +487,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   color: var(--gold);
 }
 .dist-main-goal {
-  font-size: 0.7rem;
+  font-size: max(0.75rem, 0.7rem);
   color: var(--muted);
 }
 
@@ -568,7 +568,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   letter-spacing: 0.04em;
 }
 .challenge-desc {
-  font-size: 0.7rem;
+  font-size: max(0.75rem, 0.7rem);
   color: var(--muted);
   line-height: 1.3;
 }
@@ -602,7 +602,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   background: rgba(255,200,61,0.08);
   color: var(--gold);
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.68rem;
+  font-size: max(0.75rem, 0.68rem);
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -764,7 +764,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   color: var(--text);
 }
 .lb-transform {
-  font-size: 0.72rem;
+  font-size: max(0.75rem, 0.72rem);
   color: var(--muted);
 }
 .lb-steps {
@@ -969,7 +969,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   position: absolute;
   background: rgba(20,20,30,0.95);
   color: var(--gold);
-  font-size: 0.72rem;
+  font-size: max(0.75rem, 0.72rem);
   padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid var(--gold);
@@ -989,7 +989,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  font-size: 0.5rem;
+  font-size: max(0.75rem, 0.5rem);
   color: var(--muted);
   text-align: right;
   padding-right: 4px;
@@ -1002,7 +1002,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
 
 /* ── FEAT-S8: Settings field improvements ── */
 .settings-field label {
-  font-size: 0.72rem;
+  font-size: max(0.75rem, 0.72rem);
   color: var(--muted);
   margin-bottom: 4px;
   display: block;
