@@ -77,3 +77,35 @@ self.addEventListener('fetch', function(e) {
     })
   );
 });
+
+
+// FEAT-S13: Push notification handler
+self.addEventListener('push', function(event) {
+  var data = { title: 'Saiyan Tracker', body: 'Nouvelle notification', icon: '/icons/icon-192.png' };
+  try {
+    if (event.data) data = Object.assign(data, event.data.json());
+  } catch (e) {
+    if (event.data) data.body = event.data.text();
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-72.png',
+      vibrate: [200, 100, 200],
+      data: data
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+        if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/');
+    })
+  );
+});
