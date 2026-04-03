@@ -8,6 +8,15 @@
 
 /* ── CSS Variables ── */
 :root {
+
+  /* Z-index hierarchy (BUG-S11) */
+  --z-base: 1;
+  --z-tooltip: 10;
+  --z-nav: 50;
+  --z-overlay: 100;
+  --z-modal: 200;
+  --z-toast: 250;
+  --z-transform: 300;
   --bg: #0a0a0f;
   --bg-card: #12151f;
   --stroke: rgba(255,255,255,0.07);
