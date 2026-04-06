@@ -661,7 +661,7 @@ footer { font-size: max(0.75rem, 0.65rem); }
   --accent-secondary: #FFD700;
   --ring-bg: rgba(0,0,0,0.08);
 }
-.light-theme body { background: #FFF8F0; color: #1A1A1A; }
+body.light-theme { background: #FFF8F0; color: #1A1A1A; }
 .light-theme .bottom-nav button { color: #888; }
 .light-theme .bottom-nav button.active { color: #FF8C00; }
 .light-theme .toast { background: #1A1A1A; color: #FFF8F0; }
