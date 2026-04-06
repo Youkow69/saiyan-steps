@@ -2760,7 +2760,7 @@ setTimeout(checkWeeklySummary, 1500);
 // BUG-S2: Restore sleep session on reload
 function restoreSleepSession() {
   try {
-    const session = safeGet('st_sleep_session', null);
+    const session = null; try { session = JSON.parse(safeGet('st_sleep_session', null)); } catch(e) {};
     if (session && (session.active === true || session.confirmed === true)) {
       sleepMode = true;
       sleepStart = session.start;
