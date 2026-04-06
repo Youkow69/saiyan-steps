@@ -105,7 +105,7 @@ self.addEventListener('notificationclick', function(event) {
       for (var i = 0; i < clientList.length; i++) {
         if (clientList[i].url && 'focus' in clientList[i]) return clientList[i].focus();
       }
-      if (clients.openWindow) return clients.openWindow('/');
+      if (clients.openWindow) return clients.openWindow('/saiyan-steps/');
     })
   );
 });
