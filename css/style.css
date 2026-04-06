@@ -15,8 +15,8 @@
   --z-nav: 50;
   --z-overlay: 100;
   --z-modal: 200;
-  --z-toast: 250;
-  --z-transform: 300;
+  --z-toast: 300;
+  --z-transform: 250;
   --bg: #0a0a0f;
   --bg-card: #12151f;
   --stroke: rgba(255,255,255,0.07);
