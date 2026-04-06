@@ -167,7 +167,7 @@ async function syncStepsLeaderboard() {
     const totalSteps = parseInt(localStorage.getItem('st_total_steps') || '0');
     const streak = parseInt(localStorage.getItem('st_streak') || '0');
 
-    await sb.from('leaderboard').upsert({
+    await sb.from('steps_leaderboard').upsert({
       user_id: user.id,
       display_name: profile.name || user.email.split('@')[0],
       weekly_steps: totalSteps,
